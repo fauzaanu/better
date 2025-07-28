@@ -1,0 +1,57 @@
+{% load static %}
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="description" content="{{ description }}"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}"/>
+
+    <!-- Tailwind CSS -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}"/>
+
+    <!-- SEO Meta Tags -->
+    <meta name="author" content="{{ author }}"/>
+    <meta name="keywords" content="{{ keywords }}"/>
+    <meta name="robots" content="index, follow"/>
+
+    <!-- Open Graph / Facebook Meta Tags -->
+    <meta property="og:type" content="{{ og_type }}"/>
+    <meta property="og:url" content="{{ og_url }}"/>
+    <meta property="og:title" content="{{ og_title }}"/>
+    <meta property="og:description" content="{{ og_description }}"/>
+    <meta property="og:image" content="{% static og_image %}"/>
+
+    <!-- Twitter Meta Tags -->
+    <meta name="twitter:card" content="{{ twitter_card }}"/>
+    <meta name="twitter:title" content="{{ twitter_title }}"/>
+    <meta name="twitter:description" content="{{ twitter_description }}"/>
+    <meta name="twitter:image" content="{% static twitter_image %}"/>
+
+    <title>{{ site_name }}</title>
+
+    <!-- FontAwesome Icons -->
+    <link href="{% static 'fontawesome/css/fontawesome.css' %}" rel="stylesheet"/>
+    <link href="{% static 'fontawesome/css/brands.css' %}" rel="stylesheet"/>
+    <link href="{% static 'fontawesome/css/solid.css' %}" rel="stylesheet"/>
+    <link href="{% static 'fontawesome/css/sharp-thin.css' %}" rel="stylesheet"/>
+    <link href="{% static 'fontawesome/css/duotone-thin.css' %}" rel="stylesheet"/>
+    <link href="{% static 'fontawesome/css/sharp-duotone-thin.css' %}" rel="stylesheet"/>
+
+    <!-- Alpine.js -->
+    <script defer src="{% static 'js/alpine.min.js' %}"></script>
+</head>
+<body class="flex flex-col min-h-screen max-w-7xl mx-auto">
+
+<c-navbar/>
+
+<main class="flex flex-col gap-20">
+    {{ slot }}
+</main>
+
+<c-footer/>
+<!-- Add additional custom components here -->
+
+</body>
+</html>
