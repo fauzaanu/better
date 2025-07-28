@@ -1,8 +1,0 @@
-1. Use class based views but not generic views
-2. Each View must have a seperate testcase inheriting class grouping the tests of that view
-3. Use signals where nessesary
-4. Fat models and thin views
-5. Use Django forms only for validation, while writing form HTML manually in templates for full styling control
-6. As we use django-cotton (more details in `ui_guide.md`), we would not be using {% include %} or {% extends %} and where possible even avoid with
-7. Use alpinejs however DO NOT OVERUSE it. DO not use alpinejs for a for loop, as django templates can already do that, use alpine when nessesary and if the implementation is impossible or really complex if implemented in django
-8. Use template tags for conditional styling, tailwindcss is already monitoring the directories  

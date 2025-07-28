@@ -122,7 +122,7 @@ LOGGING = {
         },
         "telegram": {
             "level": "INFO",
-            "class": "onlydjango.telegram_logging.TelegramBotHandler",
+            "class": "onlydjango.helpers.telegram_logging.TelegramBotHandler",
             "telegram_bot_token": os.environ["TELEGRAM_BOT_TOKEN"],
             "telegram_chat_id": os.environ["TELEGRAM_CHAT_ID"],
             "formatter": "telegram",
@@ -130,7 +130,7 @@ LOGGING = {
         },
         "error_handler": {
             "level": "ERROR",
-            "class": "onlydjango.telegram_logging.TelegramBotHandler",
+            "class": "onlydjango.helpers.telegram_logging.TelegramBotHandler",
             "telegram_bot_token": os.environ["TELEGRAM_BOT_TOKEN"],
             "telegram_chat_id": os.environ["TELEGRAM_CHAT_ID"],
             "formatter": "telegram",
