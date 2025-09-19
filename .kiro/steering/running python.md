@@ -1,0 +1,1 @@
+Always use UV to run python. DO not run too many commands all the time. Focus on writing the code. the human is observing closely and can run commands later on. writing code is your focus and your job.

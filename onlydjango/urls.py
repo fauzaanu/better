@@ -15,6 +15,7 @@ urlpatterns += [
 
     # apps : YOUR APP URLS go here
     # Note that wagtail urls dont need including if using default aproach of wagtail
+    path('', include('apps.better.urls')),
 
 ]
 

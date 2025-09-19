@@ -139,24 +139,14 @@ SOCIALACCOUNT_PROVIDERS = {
 
 SITE_VERSION = "0.0.1"
 SITE_NAME = os.getenv("SITE_NAME")
-
-# [
-#   {
-#     "AllowedOrigins": [
-#       "*"
-#     ],
-#     "AllowedMethods": [
-#       "GET",
-#       "HEAD"
-#     ],
-#     "AllowedHeaders": [
-#       "*"
-#     ],
-#     "ExposeHeaders": [
-#       "Content-Length",
-#       "Content-Type",
-#       "Access-Control-Allow-Origin"
-#     ],
-#     "MaxAgeSeconds": 1
-#   }
-# ]
+SITE_AUTHOR = ""
+SITE_KEYWORDS = ""
+SITE_DESCRIPTION = ""
+OG_TYPE = ""
+OG_TITLE = ""
+OG_DESCRIPTION = ""
+OG_IMAGE = ""
+TWITTER_CARD = ""
+TWITTER_TITLE = ""
+TWITTER_DESCRIPTION = ""
+TWITTER_IMAGE = ""
