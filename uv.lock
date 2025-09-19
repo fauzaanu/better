@@ -16,14 +16,11 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "django" },
-    { name = "django-allauth" },
     { name = "django-browser-reload" },
     { name = "django-cotton" },
-    { name = "django-custom-error-views" },
     { name = "django-debug-toolbar" },
     { name = "django-storages", extra = ["s3"] },
     { name = "gunicorn" },
-    { name = "huey" },
     { name = "psycopg", extra = ["binary", "pool"] },
     { name = "python-dotenv" },
     { name = "pytz" },
@@ -39,14 +36,11 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "django", specifier = ">=5.2" },
-    { name = "django-allauth", specifier = ">=65.8.0" },
     { name = "django-browser-reload", specifier = ">=1.18.0" },
     { name = "django-cotton", specifier = ">=0.9.32" },
-    { name = "django-custom-error-views", specifier = ">=0.2.5" },
     { name = "django-debug-toolbar", specifier = ">=5.2.0" },
     { name = "django-storages", extras = ["s3"], specifier = ">=1.14.6" },
     { name = "gunicorn", specifier = ">=23.0.0" },
-    { name = "huey", specifier = ">=2.5.1" },
     { name = "psycopg", extras = ["binary", "pool"], specifier = ">=3.2.1" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "pytz", specifier = ">=2024.1" },
@@ -144,16 +138,6 @@ wheels = [
 ]
 
 [[package]]
-name = "django-allauth"
-version = "65.8.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "asgiref" },
-    { name = "django" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/09/50/4fa3a907be1a49f5ad3b7cd67944d4b91186ef6743fe0fd401c160ba6341/django_allauth-65.8.0.tar.gz", hash = "sha256:9da589d99d412740629333a01865a90c95c97e0fae0cde789aa45a8fda90e83b", size = 1679978 }
-
-[[package]]
 name = "django-browser-reload"
 version = "1.18.0"
 source = { registry = "https://pypi.org/simple" }
@@ -176,18 +160,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/37/4e/e8be2accc5e10c899f4d22e6f64686b93733c5ac42524275e627cbf7314f/django_cotton-2.1.2.tar.gz", hash = "sha256:ad467f725239bf43004dad87dfc70f95c08d96efde4166d4bfb815e7cb72c56f", size = 23063 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/45/2b/1285d050801ee92bfe408574954d26aaacbf67e1eb68946a78024fd3d0b8/django_cotton-2.1.2-py3-none-any.whl", hash = "sha256:8492cb7cfe881455a1b9dfaaaec2d1943494a1d3d2e2066ac7da6ce31afceef3", size = 22053 },
-]
-
-[[package]]
-name = "django-custom-error-views"
-version = "0.2.5"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "django" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/83/d7/ec9216009b30c90076644f49af4f7699c5c63ce1b1d922f54fe6072d77da/django_custom_error_views-0.2.5.tar.gz", hash = "sha256:e9a3f62dad64a24daf44548c9267215393b218cc01b1a7aadda1cf909ecec0f6", size = 111121 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c4/8d/7a6a3f4cfb4a0f29baed26e6bae6b6e794d70022188643c6256b92343713/django_custom_error_views-0.2.5-py3-none-any.whl", hash = "sha256:cc7df9515fd08726c0d8990b5a4d163c0657afa250e36d3bb0425789fea91f02", size = 112927 },
 ]
 
 [[package]]
@@ -231,12 +203,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/34/72/9614c465dc206155d
 wheels = [
     { url = "https://files.pythonhosted.org/packages/cb/7d/6dac2a6e1eba33ee43f318edbed4ff29151a49b5d37f080aad1e6469bca4/gunicorn-23.0.0-py3-none-any.whl", hash = "sha256:ec400d38950de4dfd418cff8328b2c8faed0edb0d517d3394e457c317908ca4d", size = 85029 },
 ]
-
-[[package]]
-name = "huey"
-version = "2.5.3"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/86/8c/2dfecf3705f5e522097b4e9fb6fb38e627a0340f8362cc05bd7a845e4279/huey-2.5.3.tar.gz", hash = "sha256:089fc72b97fd26a513f15b09925c56fad6abe4a699a1f0e902170b37e85163c7", size = 836918 }
 
 [[package]]
 name = "idna"

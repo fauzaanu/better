@@ -1,6 +1,5 @@
 from os import path
 from .base import *
-from huey import PriorityRedisHuey
 
 DEBUG = True
 ALLOWED_HOSTS = [
@@ -96,11 +95,6 @@ CACHES = {
     }
 }
 
-
-HUEY = PriorityRedisHuey(host='localhost', port=6379)
-HUEY.flush()
-# sometimes huey refuses to start tasks
-HUEY.periodic_task_check_frequency = 1
 
 TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]

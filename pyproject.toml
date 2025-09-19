@@ -7,12 +7,9 @@ requires-python = ">=3.12"
 dependencies = [
     "django>=5.2",
     "python-dotenv>=1.0.1",
-    "django-allauth>=65.8.0",
-    "huey>=2.5.1",
     "redis>=5.0.8",
     "pytz>=2024.1",
     "gunicorn>=23.0.0",
-    "django-custom-error-views>=0.2.5",
     "psycopg[binary,pool]>=3.2.1",
     "django-storages[s3]>=1.14.6",
     "django-cotton>=0.9.32",

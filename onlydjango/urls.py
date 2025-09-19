@@ -12,7 +12,6 @@ urlpatterns = [
 urlpatterns += [
     path("__debug__/", include(debug_toolbar.urls)),
     path("__reload__/", include("django_browser_reload.urls")),
-    path('accounts/', include('allauth.urls')),
 
     # apps : YOUR APP URLS go here
     # Note that wagtail urls dont need including if using default aproach of wagtail

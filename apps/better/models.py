@@ -11,12 +11,18 @@ class BaseModel(models.Model):
 
 
 class ScoreDay(BaseModel):
-    ...
+    day = models.DateField()
+    score = models.PositiveIntegerField(null=True)
+    max_score = models.PositiveIntegerField(null=True)
+
 
 
 class TargetCategory(BaseModel):
+    day = models.ForeignKey(ScoreDay, on_delete=models.CASCADE)
     name = models.CharField(max_length=200)
-    tracking_day = models.ForeignKey(ScoreDay, on_delete=models.CASCADE)
+    score = models.PositiveIntegerField(null=True)
+    max_score = models.PositiveIntegerField(null=True)
+
 
     def __str__(self):
         return self.name
@@ -26,18 +32,23 @@ class TargetCategory(BaseModel):
         return 1
 
 
+class Importance(models.Model):
+    label = models.CharField(max_length=200)
+    score = models.PositiveIntegerField()
+
+    # IMPORTANCE_IMPORTANT = 1
+    #     IMPORTANCE_LIFECHANGING = 2
+    #     IMPORTANCE_CRITICAL = 6
+    #
+    #     IMPORTANCE_CHOICES = (
+    #         ('Important', IMPORTANCE_IMPORTANT),
+    #         ('Life-changing', IMPORTANCE_LIFECHANGING),
+    #         ('Critical', IMPORTANCE_CRITICAL),
+    #     )
+
+
 class Target(BaseModel):
-    IMPORTANCE_IMPORTANT = 1
-    IMPORTANCE_LIFECHANGING = 2
-    IMPORTANCE_CRITICAL = 6
-
-    IMPORTANCE_CHOICES = (
-        ('Important', IMPORTANCE_IMPORTANT),
-        ('Life-changing', IMPORTANCE_LIFECHANGING),
-        ('Critical', IMPORTANCE_CRITICAL),
-    )
-
     name = models.CharField(max_length=200)
     category = models.ForeignKey(TargetCategory, on_delete=models.CASCADE)
-    importance = models.CharField(max_length=20, choices=IMPORTANCE_CHOICES)
+    importance = models.ForeignKey(Importance, on_delete=models.CASCADE)
     is_achieved = models.BooleanField(default=False)

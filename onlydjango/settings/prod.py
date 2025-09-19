@@ -1,7 +1,5 @@
 import os
 
-from huey import PriorityRedisHuey
-
 from .base import *
 
 DEBUG = False
@@ -163,9 +161,5 @@ LOGGING = {
         },
     },
 }
-
-HUEY = PriorityRedisHuey('huey', url=REDIS_URL)
-# sometimes huey refuses to start tasks
-HUEY.periodic_task_check_frequency = 1
 
 

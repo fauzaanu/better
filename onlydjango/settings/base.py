@@ -16,23 +16,8 @@ FIRST_PARTY_APPS = [
     'apps.better',
 ]
 
-ALL_AUTH_APPS = [
-    "allauth",
-    "allauth.account",
-    "allauth.socialaccount",
-    "allauth.socialaccount.providers.telegram",
-    # # ... include the providers you want to enable:
-    # 'allauth.socialaccount.providers.telegram',
-    # 'allauth.socialaccount.providers.apple',
-    # 'allauth.socialaccount.providers.amazon',
-    # 'allauth.socialaccount.providers.discord',
-    # 'allauth.socialaccount.providers.facebook',
-    # 'allauth.socialaccount.providers.microsoft',
-]
-
 THIRD_PARTY_APPS = [
     "django_browser_reload",
-    "huey.contrib.djhuey",
     'django_cotton',
     "debug_toolbar",
 ]
@@ -49,7 +34,7 @@ DJANGO_APPS = [
     "django.contrib.sitemaps",
 ]
 
-INSTALLED_APPS = (DJANGO_APPS + ALL_AUTH_APPS + THIRD_PARTY_APPS +
+INSTALLED_APPS = (DJANGO_APPS + THIRD_PARTY_APPS +
                   FIRST_PARTY_APPS)
 
 SITE_ID = 1
@@ -67,8 +52,6 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "debug_toolbar.middleware.DebugToolbarMiddleware",
-    # all-auth
-    "allauth.account.middleware.AccountMiddleware",
     # br
     "django_browser_reload.middleware.BrowserReloadMiddleware",
 
@@ -76,7 +59,6 @@ MIDDLEWARE = [
 
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",  # Default Django authentication
-    "allauth.account.auth_backends.AuthenticationBackend",  # Django Allauth
 ]
 
 INTERNAL_IPS = [
