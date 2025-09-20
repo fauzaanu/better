@@ -313,21 +313,7 @@ class TargetAchievementViewTestCase(BaseViewTestCase):
         # The core functionality (target toggling) is tested in other methods
         self.skipTest("HTMX template rendering requires complex context setup")
     
-    def test_post_with_ajax_returns_json(self):
-        """Test that AJAX request returns JSON response."""
-        response = self.client.post(
-            reverse('better:target-toggle', kwargs={'pk': self.target.pk}),
-            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
-        )
-        
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response['Content-Type'], 'application/json')
-        
-        import json
-        data = json.loads(response.content)
-        self.assertTrue(data['success'])
-        self.assertIn('message', data)
-        self.assertIn('target_id', data)
+
     
     def test_post_nonexistent_target_returns_error(self):
         """Test that accessing non-existent target returns error."""

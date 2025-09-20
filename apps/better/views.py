@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import View
 from django.contrib import messages
-from django.http import JsonResponse, Http404
+from django.http import Http404
 from datetime import timedelta
 from .models import ScoreDay, TargetCategory, Target, Importance
 from .forms import TargetCategoryForm, SleepWakeTimeForm
@@ -168,42 +168,24 @@ class TargetAchievementView(View):
             return self._handle_error(request, 'An error occurred while updating the target.', 500)
     
     def _handle_response(self, request, target, current_day, message):
-        """Handle different response types (HTMX, AJAX, regular)"""
-        # Handle HTMX requests - return partial HTML template
+        """Handle HTMX requests only"""
+        # Handle HTMX requests - return updated scores section
         if request.headers.get('HX-Request'):
             context = current_day.get_dashboard_context()
-            response = render(request, 'cotton/better/today_scores.html', context)
+            response = render(request, 'cotton/better/today_scores_simple.html', context)
             response['HX-Trigger-After-Swap'] = f'updateTarget-{target.id}'
             return response
-        
-        # Handle AJAX requests (legacy support)
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({
-                'success': True,
-                'message': message,
-                'target_id': target.id,
-                'is_achieved': target.is_achieved,
-                'category_score': target.category.get_normalized_score(),
-                'daily_score': current_day.get_normalized_score(),
-            })
         
         # Handle regular form submissions
         messages.success(request, message)
         return redirect('better:dashboard')
     
     def _handle_error(self, request, error_message, status_code):
-        """Handle error responses for different request types"""
+        """Handle error responses for HTMX requests only"""
         # Handle HTMX requests
         if request.headers.get('HX-Request'):
             return render(request, 'cotton/better/error_message.html', {
                 'error_message': error_message
-            }, status=status_code)
-        
-        # Handle AJAX requests
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({
-                'success': False,
-                'error': error_message
             }, status=status_code)
         
         # Handle regular form submissions
