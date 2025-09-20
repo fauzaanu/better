@@ -1,12 +1,90 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Dashboard</title>
-</head>
-<body>
-    <h1>Dashboard</h1>
-    <p>Current Day: {{ current_day.day }}</p>
-    <p>Progress: {{ progress_percentage }}%</p>
-    <p>Categories: {{ categories_data|length }}</p>
-</body>
-</html>
+<c-better.layout>
+  <!-- Center Panel Content: Today's Targets -->
+  <div class="space-y-6">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold text-white">Today's Targets</h1>
+      <div class="flex space-x-2">
+        {% if is_today|default:True %}
+          <a href="{% url 'better:category-create' %}" class="bg-zinc-950 border border-zinc-800 text-white px-4 py-2 rounded text-sm hover:bg-zinc-900 transition-colors">
+            Add Category
+          </a>
+        {% endif %}
+        <a href="{% url 'better:importance-manage' %}" class="bg-zinc-950 border border-zinc-800 text-white px-4 py-2 rounded text-sm hover:bg-zinc-900 transition-colors">
+          Manage Importance
+        </a>
+        {% if not is_today|default:False %}
+          <a href="{% url 'better:dashboard' %}" class="bg-zinc-950 border border-zinc-800 text-white px-4 py-2 rounded text-sm hover:bg-zinc-900 transition-colors">
+            Back to Today
+          </a>
+        {% endif %}
+      </div>
+    </div>
+    
+
+    
+    <!-- Active Hours Section -->
+    <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-3 mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-medium text-zinc-300">Active Hours</h3>
+        <span class="text-xs text-zinc-400">
+          {% if current_day.sleep_time %}
+            {{ current_day.get_active_hours }} hours
+          {% else %}
+            {{ current_day.get_active_hours }} hours (so far)
+          {% endif %}
+        </span>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <div class="flex items-center gap-4">
+          <div class="flex items-center">
+            <label class="text-sm text-zinc-400 font-medium mr-3">Wake</label>
+            <input 
+              type="time" 
+              name="wake_time" 
+              id="id_wake_time"
+              value="{% if current_day.wake_time %}{{ current_day.wake_time|time:'H:i' }}{% endif %}"
+              class="w-24 px-2 py-1 text-sm bg-zinc-900 border border-zinc-700 rounded text-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-600 focus:border-zinc-600"
+              {% if not current_day.wake_time %}required{% endif %}
+            />
+          </div>
+          <div class="flex items-center">
+            <label class="text-sm text-zinc-400 font-medium mr-3">Sleep</label>
+            <input 
+              type="time" 
+              name="sleep_time" 
+              id="id_sleep_time"
+              value="{% if current_day.sleep_time %}{{ current_day.sleep_time|time:'H:i' }}{% endif %}"
+              class="w-24 px-2 py-1 text-sm bg-zinc-900 border border-zinc-700 rounded text-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-600 focus:border-zinc-600"
+            />
+          </div>
+          {% if is_today|default:True %}
+            <button type="submit" class="px-4 py-1 bg-zinc-900 border border-zinc-700 text-zinc-300 rounded text-sm hover:bg-zinc-800 transition-colors font-medium">
+              Update
+            </button>
+          {% endif %}
+        </div>
+        {% if sleep_wake_form.wake_time.errors or sleep_wake_form.sleep_time.errors %}
+          <div class="text-red-400 text-xs mt-1">
+            {% for error in sleep_wake_form.wake_time.errors %}
+              <p>Wake: {{ error }}</p>
+            {% endfor %}
+            {% for error in sleep_wake_form.sleep_time.errors %}
+              <p>Sleep: {{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </form>
+    </div>
+    
+    <!-- Target List Component (only show if wake time is set) -->
+    {% if current_day.has_wake_time %}
+      <c-better.target-list :categories_data="categories_data" :is_today="is_today|default:True" />
+    {% else %}
+      <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 text-center">
+        <h3 class="text-lg font-semibold text-zinc-300 mb-2">Wake Time Required</h3>
+        <p class="text-zinc-400">Please set your wake time above before viewing and managing your targets.</p>
+      </div>
+    {% endif %}
+  </div>
+</c-better.layout>

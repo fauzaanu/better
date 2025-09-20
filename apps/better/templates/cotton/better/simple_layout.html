@@ -1,0 +1,37 @@
+<c-layout>
+  <!-- HTMX Script -->
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  
+  <!-- HTMX Loading Indicator Styles -->
+  <style>
+    .htmx-indicator {
+      display: none;
+    }
+    .htmx-request .htmx-indicator {
+      display: inline-block;
+    }
+    .htmx-request.htmx-indicator {
+      display: inline-block;
+    }
+  </style>
+  
+  <!-- HTMX CSRF Configuration -->
+  <script>
+    document.body.addEventListener('htmx:configRequest', function(evt) {
+      evt.detail.headers['X-CSRFToken'] = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    });
+  </script>
+
+  <!-- Simple Dark Theme Layout -->
+  <div class="min-h-screen bg-black text-white">
+    <div class="px-4 py-6">
+      <!-- CSRF Token for HTMX requests -->
+      {% csrf_token %}
+      
+      <!-- Single Column Layout -->
+      <div class="max-w-4xl mx-auto">
+        {{ slot }}
+      </div>
+    </div>
+  </div>
+</c-layout>

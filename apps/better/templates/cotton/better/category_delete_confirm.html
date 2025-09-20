@@ -1,0 +1,98 @@
+<!-- Category Delete Confirmation Component -->
+<c-vars 
+  page_title="{{ page_title }}"
+  category_name="{{ category_name }}"
+  object="{{ object }}"
+  target_count="{{ target_count }}"
+/>
+
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-6 text-center">
+    <h1 class="text-2xl font-bold text-white mb-2">{{ page_title }}</h1>
+  </div>
+
+  <!-- Display messages -->
+  {% if messages %}
+    <div class="space-y-3">
+      {% for message in messages %}
+        <div class="p-4 rounded-md bg-zinc-950 border border-zinc-800 text-zinc-200">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- Warning Box -->
+  <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-6">
+    <div class="flex items-center mb-3">
+      <span class="text-2xl mr-3">⚠️</span>
+      <h2 class="text-xl font-bold text-zinc-200">Confirm Deletion</h2>
+    </div>
+    <p class="text-zinc-300">
+      Are you sure you want to delete the category "{{ category_name }}"?
+    </p>
+  </div>
+
+  <!-- Category Information -->
+  <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-6">
+    <h3 class="text-lg font-semibold text-white mb-4">Category Details</h3>
+    <div class="space-y-3">
+      <div class="flex justify-between">
+        <span class="text-zinc-400">Category Name:</span>
+        <span class="text-white font-medium">{{ object.name }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-zinc-400">Current Day:</span>
+        <span class="text-white">{{ object.day.day|date:"F j, Y" }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-zinc-400">Number of Targets:</span>
+        <span class="text-white font-medium">{{ target_count }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Danger Warning (if targets exist) -->
+  {% if target_count > 0 %}
+    <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-6">
+      <div class="flex items-center mb-3">
+        <span class="text-2xl mr-3">🚨</span>
+        <h2 class="text-xl font-bold text-zinc-200">Important Warning</h2>
+      </div>
+      <div class="text-zinc-300 space-y-2">
+        <p>
+          This category contains <strong>{{ target_count }}</strong> target{{ target_count|pluralize }}.
+          Deleting this category will also remove all of its targets.
+        </p>
+        <p class="font-semibold">
+          This action cannot be undone!
+        </p>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Action Buttons -->
+  <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-6">
+    <form method="post">
+      {% csrf_token %}
+      <div class="flex space-x-4 justify-center">
+        <button 
+          type="submit" 
+          class="bg-zinc-950 border border-zinc-800 text-white py-3 px-6 rounded-md font-medium hover:bg-zinc-900 transition-colors"
+        >
+          Yes, Delete Category
+          {% if target_count > 0 %}
+            and {{ target_count }} Target{{ target_count|pluralize }}
+          {% endif %}
+        </button>
+        <a 
+          href="{% url 'better:dashboard' %}" 
+          class="bg-zinc-950 border border-zinc-800 text-white py-3 px-6 rounded-md font-medium hover:bg-zinc-900 transition-colors"
+        >
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,149 @@
+<c-vars 
+  page_title="{{ page_title }}" 
+  create_form="{{ create_form }}"
+  importance_levels="{{ importance_levels }}"
+  has_importance_levels="{{ has_importance_levels }}"
+/>
+
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-6">
+    <h1 class="text-2xl font-bold text-white mb-2">{{ page_title }}</h1>
+    <p class="text-zinc-400">Manage importance levels for your targets. Higher scores indicate more important targets.</p>
+  </div>
+
+  <!-- Display messages -->
+  {% if messages %}
+    <div class="space-y-3">
+      {% for message in messages %}
+        <div class="p-4 rounded-md bg-zinc-950 border border-zinc-800 text-zinc-200">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Create New Importance Level -->
+    <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-6">
+      <h2 class="text-xl font-bold text-white mb-4">Create New Importance Level</h2>
+      
+      <form method="post" class="space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create">
+        
+        <div>
+          <label for="id_label" class="block text-sm font-medium text-zinc-300 mb-2">
+            Importance Label *
+          </label>
+          <input 
+            type="text" 
+            name="label" 
+            id="id_label"
+            value="{{ create_form.label.value|default:'' }}"
+            placeholder="Enter importance label (e.g., Critical, Important)"
+            maxlength="200"
+            class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent"
+            required
+          >
+          {% if create_form.label.help_text %}
+            <div class="text-xs text-zinc-400 mt-1">{{ create_form.label.help_text }}</div>
+          {% endif %}
+          {% if create_form.label.errors %}
+            <div class="mt-1">
+              {% for error in create_form.label.errors %}
+                <div class="text-zinc-400 text-sm">{{ error }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+        
+        <div>
+          <label for="id_score" class="block text-sm font-medium text-zinc-300 mb-2">
+            Score *
+          </label>
+          <input 
+            type="number" 
+            name="score" 
+            id="id_score"
+            value="{{ create_form.score.value|default:'' }}"
+            placeholder="Enter numeric score (1 or higher)"
+            min="1"
+            class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent"
+            required
+          >
+          {% if create_form.score.help_text %}
+            <div class="text-xs text-zinc-400 mt-1">{{ create_form.score.help_text }}</div>
+          {% endif %}
+          {% if create_form.score.errors %}
+            <div class="mt-1">
+              {% for error in create_form.score.errors %}
+                <div class="text-zinc-400 text-sm">{{ error }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+        
+        <!-- Display non-field errors -->
+        {% if create_form.non_field_errors %}
+          <div class="bg-zinc-950 border border-zinc-800 rounded-md p-3">
+            {% for error in create_form.non_field_errors %}
+              <div class="text-zinc-200 text-sm">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        
+        <button 
+          type="submit" 
+          class="w-full bg-zinc-950 border border-zinc-800 text-white py-2 px-4 rounded-md font-medium hover:bg-zinc-900 transition-colors"
+        >
+          Create Importance Level
+        </button>
+      </form>
+    </div>
+
+    <!-- Existing Importance Levels -->
+    <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-6">
+      <h2 class="text-xl font-bold text-white mb-4">
+        Existing Importance Levels 
+        <span class="text-sm font-normal text-zinc-400">({{ importance_levels|length }})</span>
+      </h2>
+      
+      {% if has_importance_levels %}
+        <div class="space-y-3">
+          {% for importance in importance_levels %}
+            <div class="bg-zinc-950 border border-zinc-800 rounded-md p-4 flex justify-between items-center">
+              <div>
+                <div class="font-medium text-white">{{ importance.label }}</div>
+                <div class="text-sm text-zinc-400">{{ importance.score }} points</div>
+              </div>
+              <div class="flex space-x-2">
+                <!-- Future: Add edit/delete buttons here -->
+                <span class="text-xs px-2 py-1 bg-zinc-900 border border-zinc-800 text-white rounded">
+                  Active
+                </span>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-center py-8 text-zinc-500">
+          <p class="text-lg mb-2">No importance levels yet</p>
+          <p class="text-sm">Create your first importance level to get started.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-4">
+    <div class="flex justify-center">
+      <a 
+        href="{% url 'better:dashboard' %}" 
+        class="bg-zinc-950 border border-zinc-800 text-white py-2 px-6 rounded-md font-medium hover:bg-zinc-900 transition-colors"
+      >
+        Back to Dashboard
+      </a>
+    </div>
+  </div>
+</div>

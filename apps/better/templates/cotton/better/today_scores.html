@@ -1,0 +1,89 @@
+<c-vars 
+  current_day="{{ current_day }}" 
+  categories_data="{{ categories_data }}" 
+  progress_percentage="{{ progress_percentage }}"
+  yesterday_day="{{ yesterday_day }}"
+  yesterday_categories="{{ yesterday_categories }}"
+/>
+
+<div class="space-y-4" id="today-scores">
+  <h2 class="text-xl font-bold text-zinc-300 border-b border-zinc-800 pb-2">
+    Today's Progress
+  </h2>
+  
+  <!-- Score cards -->
+  <div class="flex flex-wrap gap-4">
+    <!-- Today's Total Score -->
+    <div class="bg-zinc-950 border border-zinc-800 rounded p-4 w-36 h-32 flex flex-col items-center justify-center">
+      <div class="text-sm text-zinc-400">Daily Score</div>
+      <div class="text-xl font-bold text-zinc-200" id="daily-score">
+        {{ current_day.score|default:0 }}/{{ current_day.max_score|default:0 }}
+      </div>
+      {% if yesterday_day %}
+        <div class="text-xs text-zinc-500 mt-1">
+          Yesterday: {{ yesterday_day.score|default:0 }}/{{ yesterday_day.max_score|default:0 }}
+        </div>
+      {% endif %}
+      {% if current_day.yesterday_change %}
+        {% if current_day.yesterday_change > 0 %}
+          <div class="text-xs text-zinc-300">+{{ current_day.yesterday_change|floatformat:0 }}</div>
+        {% elif current_day.yesterday_change < 0 %}
+          <div class="text-xs text-zinc-400">{{ current_day.yesterday_change|floatformat:0 }}</div>
+        {% endif %}
+      {% endif %}
+    </div>
+    
+    <!-- Today's Category Scores -->
+    {% for category_data in categories_data %}
+      <div class="bg-zinc-950 border border-zinc-800 rounded p-4 w-36 h-32 flex flex-col items-center justify-center" id="category-{{ category_data.category.id }}">
+        <div class="text-sm text-zinc-400 text-center truncate w-full">{{ category_data.category.name }} Score</div>
+        <div class="text-xl font-bold text-zinc-200 category-score">
+          {{ category_data.category.score|default:0 }}/{{ category_data.category.max_score|default:0 }}
+        </div>
+        
+        <!-- Find yesterday's score for this category -->
+        {% for yesterday_cat in yesterday_categories %}
+          {% if yesterday_cat.category.name == category_data.category.name %}
+            <div class="text-xs text-zinc-500 mt-1">
+              Yesterday: {{ yesterday_cat.category.score|default:0 }}/{{ yesterday_cat.category.max_score|default:0 }}
+            </div>
+          {% endif %}
+        {% endfor %}
+        
+        {% if category_data.category.yesterday_change %}
+          {% if category_data.category.yesterday_change > 0 %}
+            <div class="text-xs text-zinc-300">+{{ category_data.category.yesterday_change|floatformat:0 }}</div>
+          {% elif category_data.category.yesterday_change < 0 %}
+            <div class="text-xs text-zinc-400">{{ category_data.category.yesterday_change|floatformat:0 }}</div>
+          {% endif %}
+        {% endif %}
+      </div>
+    {% empty %}
+      <div class="text-zinc-500 text-center py-8 w-full">
+        <p class="text-sm">No categories yet</p>
+        <p class="text-xs">Create categories and targets to see your progress here</p>
+      </div>
+    {% endfor %}
+  </div>
+  
+  <!-- Past Days Quick Access -->
+  <div class="mt-6 pt-4 border-t border-zinc-800">
+    <h3 class="text-lg font-semibold text-zinc-300 mb-3">Past Days</h3>
+    <div class="space-y-2">
+      {% if yesterday_day %}
+        <a href="{% url 'better:day-view' pk=yesterday_day.id %}" 
+           class="block bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded p-2 text-sm transition-colors">
+          <div class="flex justify-between items-center">
+            <span class="text-zinc-300">{{ yesterday_day.day|date:"M d, Y" }}</span>
+            <span class="text-zinc-500">Yesterday</span>
+          </div>
+        </a>
+      {% endif %}
+      
+      <!-- Simple message for more days -->
+      <div class="text-center py-2">
+        <p class="text-zinc-500 text-xs">Use the day view to browse more past days</p>
+      </div>
+    </div>
+  </div>
+</div>

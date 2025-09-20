@@ -1,0 +1,61 @@
+<c-vars current_day="" />
+
+<div class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 mb-6">
+  <h3 class="text-lg font-semibold text-white mb-4">Browse Days</h3>
+  
+  <div class="flex items-center justify-center space-x-4">
+    <!-- Previous Day -->
+    {% with prev_day=current_day.get_previous_day %}
+      {% if prev_day %}
+        <a href="{% url 'better:day-view' pk=prev_day.id %}" 
+           class="flex items-center space-x-2 bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+          <span>Previous</span>
+        </a>
+      {% else %}
+        <div class="flex items-center space-x-2 bg-zinc-800 text-zinc-500 px-4 py-2 rounded cursor-not-allowed">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+          <span>No Earlier</span>
+        </div>
+      {% endif %}
+    {% endwith %}
+    
+    <!-- Current Date Display -->
+    <div class="text-center">
+      <p class="text-white font-medium">{{ current_day.day|date:"F d, Y" }}</p>
+      <p class="text-gray-400 text-sm">{{ current_day.day|date:"l" }}</p>
+    </div>
+    
+    <!-- Next Day (only if not future) -->
+    {% with next_day=current_day.get_next_day %}
+      {% if next_day %}
+        <a href="{% url 'better:day-view' pk=next_day.id %}" 
+           class="flex items-center space-x-2 bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded transition-colors">
+          <span>Next</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </a>
+      {% else %}
+        <div class="flex items-center space-x-2 bg-zinc-800 text-zinc-500 px-4 py-2 rounded cursor-not-allowed">
+          <span>Future</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </div>
+      {% endif %}
+    {% endwith %}
+  </div>
+  
+  <!-- Quick Links -->
+  <div class="flex justify-center mt-4 pt-4 border-t border-zinc-700">
+    <a href="{% url 'better:dashboard' %}" 
+       class="bg-zinc-950 border border-zinc-800 text-white px-4 py-2 rounded text-sm hover:bg-zinc-900 transition-colors">
+      Back to Today
+    </a>
+  </div>
+</div>

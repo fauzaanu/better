@@ -32,6 +32,8 @@ class ScoreDay(BaseModel):
     day = models.DateField(unique=True)
     score = models.PositiveIntegerField(null=True, blank=True)
     max_score = models.PositiveIntegerField(null=True, blank=True)
+    wake_time = models.DateTimeField(null=True, blank=True, help_text="Time when you woke up")
+    sleep_time = models.DateTimeField(null=True, blank=True, help_text="Time when you went to sleep")
 
     class Meta:
         ordering = ['-day']
@@ -90,6 +92,7 @@ class ScoreDay(BaseModel):
             new_category = TargetCategory.objects.create(
                 day=self,
                 name=prev_category.name,
+                description=prev_category.description,
                 score=None,
                 max_score=None
             )
@@ -103,6 +106,71 @@ class ScoreDay(BaseModel):
                     importance=prev_target.importance,
                     is_achieved=False  # Reset achievement status
                 )
+
+    def get_yesterday_change(self):
+        """Calculate percentage change compared to yesterday"""
+        from datetime import timedelta
+        
+        yesterday_date = self.day - timedelta(days=1)
+        try:
+            yesterday = ScoreDay.objects.get(day=yesterday_date, is_deleted=False)
+            
+            # Calculate percentage change
+            if yesterday.max_score and yesterday.max_score > 0 and self.max_score and self.max_score > 0:
+                yesterday_percentage = (yesterday.score / yesterday.max_score) * 100
+                today_percentage = (self.score / self.max_score) * 100
+                return today_percentage - yesterday_percentage
+            
+        except ScoreDay.DoesNotExist:
+            pass
+        
+        return None
+
+    def get_active_hours(self):
+        """Calculate active hours between wake and sleep time"""
+        if not self.wake_time:
+            return None
+        
+        if self.sleep_time:
+            # Calculate duration between wake and sleep
+            duration = self.sleep_time - self.wake_time
+            return round(duration.total_seconds() / 3600, 1)  # Convert to hours
+        
+        # If no sleep time yet, calculate from wake time to now (for current day)
+        if self.day == timezone.now().date():
+            from datetime import datetime
+            now = timezone.now()
+            duration = now - self.wake_time
+            return round(duration.total_seconds() / 3600, 1)
+        
+        return None
+
+    def has_wake_time(self):
+        """Check if wake time is set"""
+        return self.wake_time is not None
+
+    def get_previous_day(self):
+        """Get the previous ScoreDay if it exists"""
+        from datetime import timedelta
+        previous_date = self.day - timedelta(days=1)
+        return ScoreDay.objects.filter(
+            day=previous_date,
+            is_deleted=False
+        ).first()
+    
+    def get_next_day(self):
+        """Get the next ScoreDay if it exists and is not in the future"""
+        from datetime import timedelta
+        next_date = self.day + timedelta(days=1)
+        
+        # Don't allow navigation to future days
+        if next_date > timezone.now().date():
+            return None
+            
+        return ScoreDay.objects.filter(
+            day=next_date,
+            is_deleted=False
+        ).first()
 
     @classmethod
     def get_or_create_today(cls):
@@ -123,6 +191,7 @@ class ScoreDay(BaseModel):
 class TargetCategory(BaseModel):
     day = models.ForeignKey(ScoreDay, on_delete=models.CASCADE, related_name='categories')
     name = models.CharField(max_length=200)
+    description = models.TextField(blank=True, help_text="Description of what this category represents")
     score = models.PositiveIntegerField(null=True, blank=True)
     max_score = models.PositiveIntegerField(null=True, blank=True)
 
@@ -163,6 +232,27 @@ class TargetCategory(BaseModel):
             factor = 10
             
         return round(percentage * factor / 100, 1)
+
+    def get_yesterday_change(self):
+        """Calculate percentage change compared to yesterday's same category"""
+        from datetime import timedelta
+        
+        yesterday_date = self.day.day - timedelta(days=1)
+        try:
+            yesterday_day = ScoreDay.objects.get(day=yesterday_date, is_deleted=False)
+            yesterday_category = yesterday_day.categories.get(name=self.name, is_deleted=False)
+            
+            # Calculate percentage change
+            if (yesterday_category.max_score and yesterday_category.max_score > 0 and 
+                self.max_score and self.max_score > 0):
+                yesterday_percentage = (yesterday_category.score / yesterday_category.max_score) * 100
+                today_percentage = (self.score / self.max_score) * 100
+                return today_percentage - yesterday_percentage
+            
+        except (ScoreDay.DoesNotExist, TargetCategory.DoesNotExist):
+            pass
+        
+        return None
 
 
 class Target(BaseModel):

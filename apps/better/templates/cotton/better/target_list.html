@@ -1,0 +1,75 @@
+<c-vars categories_data="{{ categories_data }}" is_today="True" />
+
+<div class="space-y-6" id="target-list">
+  {% for category_data in categories_data %}
+    <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-4">
+      <div class="mb-4">
+        <div class="flex justify-between items-start mb-2">
+          <h3 class="text-lg font-semibold text-white">
+            {{ category_data.category.name }}
+          </h3>
+          <div class="flex items-center space-x-2">
+            <span class="text-sm text-zinc-400">
+              {{ category_data.achieved_count }}/{{ category_data.total_count }}
+            </span>
+            {% if is_today %}
+              <a href="{% url 'better:target-create' %}?category={{ category_data.category.id }}" 
+                 class="bg-zinc-900 border border-zinc-700 text-zinc-300 px-2 py-1 rounded text-xs hover:bg-zinc-800 transition-colors">
+                Add Target
+              </a>
+            {% endif %}
+          </div>
+        </div>
+        {% if category_data.category.description %}
+          <p class="text-xs text-zinc-700 mt-1 leading-relaxed">{{ category_data.category.description }}</p>
+        {% endif %}
+      </div>
+      
+      <div class="space-y-2">
+        {% for target in category_data.targets %}
+          <label class="flex items-center space-x-3 p-2 rounded cursor-pointer hover:bg-zinc-900 transition-colors" id="target-{{ target.id }}">
+            <input 
+              type="checkbox" 
+              class="target-checkbox w-5 h-5 text-zinc-600 bg-zinc-950 border-zinc-800 rounded focus:ring-zinc-500"
+              data-target-id="{{ target.id }}"
+              {% if target.is_achieved %}checked{% endif %}
+              {% if is_today %}
+                hx-post="{% url 'better:target-toggle' target.id %}"
+                hx-target="#today-scores"
+                hx-swap="outerHTML"
+                hx-trigger="change"
+                hx-include="[name='csrfmiddlewaretoken']"
+                hx-indicator="#loading-{{ target.id }}"
+              {% else %}
+                disabled
+              {% endif %}
+            >
+            <span class="flex-1 {% if target.is_achieved %}line-through text-zinc-500{% else %}text-white{% endif %}" id="target-name-{{ target.id }}">
+              {{ target.name }}
+            </span>
+            <span class="text-xs px-2 py-1 rounded bg-zinc-900 border border-zinc-800 text-zinc-300">
+              {{ target.importance.label }} ({{ target.importance.score }})
+            </span>
+            <div id="loading-{{ target.id }}" class="htmx-indicator">
+              <svg class="animate-spin h-4 w-4 text-zinc-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+          </label>
+        {% endfor %}
+      </div>
+    </div>
+  {% empty %}
+    <div class="text-center py-12 text-zinc-500">
+      <p class="text-xl mb-4">No categories yet</p>
+      {% if is_today %}
+        <a href="{% url 'better:category-create' %}" class="bg-zinc-950 border border-zinc-800 text-white px-4 py-2 rounded hover:bg-zinc-900 transition-colors">
+          Create Your First Category
+        </a>
+      {% else %}
+        <p class="text-zinc-400">No categories were created on this day</p>
+      {% endif %}
+    </div>
+  {% endfor %}
+</div>

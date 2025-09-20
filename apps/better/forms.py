@@ -281,3 +281,68 @@ class TargetAchievementForm(forms.Form):
             raise ValidationError('Target not found or no longer available.')
         
         return target_id
+
+
+class SleepWakeTimeForm(forms.Form):
+    """
+    Form for updating sleep and wake times for a ScoreDay.
+    Uses time fields and combines with the day's date.
+    """
+    
+    wake_time = forms.TimeField(required=True)
+    sleep_time = forms.TimeField(required=False)
+    
+    def __init__(self, instance=None, *args, **kwargs):
+        self.instance = instance
+        super().__init__(*args, **kwargs)
+    
+    def clean(self):
+        """Cross-field validation"""
+        cleaned_data = super().clean()
+        wake_time = cleaned_data.get('wake_time')
+        sleep_time = cleaned_data.get('sleep_time')
+        
+        if wake_time and sleep_time:
+            if sleep_time <= wake_time:
+                raise ValidationError('Sleep time must be after wake time.')
+        
+        return cleaned_data
+    
+    def save(self):
+        """Save the time data to the ScoreDay instance"""
+        if not self.instance:
+            raise ValueError('No ScoreDay instance provided')
+        
+        from django.utils import timezone
+        from datetime import datetime
+        
+        wake_time = self.cleaned_data.get('wake_time')
+        sleep_time = self.cleaned_data.get('sleep_time')
+        
+        # Combine date with time to create datetime objects
+        day_date = self.instance.day
+        
+        if wake_time:
+            wake_datetime = timezone.make_aware(
+                datetime.combine(day_date, wake_time)
+            )
+            self.instance.wake_time = wake_datetime
+        
+        if sleep_time:
+            # Sleep time could be next day if it's earlier than wake time
+            sleep_datetime = timezone.make_aware(
+                datetime.combine(day_date, sleep_time)
+            )
+            
+            # If sleep time is before wake time, assume it's next day
+            if wake_time and sleep_time < wake_time:
+                from datetime import timedelta
+                sleep_datetime += timedelta(days=1)
+            
+            self.instance.sleep_time = sleep_datetime
+        elif 'sleep_time' in self.cleaned_data:
+            # If sleep_time field was submitted but empty, clear it
+            self.instance.sleep_time = None
+        
+        self.instance.save()
+        return self.instance

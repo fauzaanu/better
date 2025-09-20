@@ -7,6 +7,9 @@ urlpatterns = [
     # Dashboard
     path('', views.DashboardView.as_view(), name='dashboard'),
     
+    # Day View (for viewing past days)
+    path('day/<int:pk>/', views.DayView.as_view(), name='day-view'),
+    
     # Target Category Management
     path('category/create/', views.TargetCategoryCreateView.as_view(), name='category-create'),
     path('category/<int:pk>/update/', views.TargetCategoryUpdateView.as_view(), name='category-update'),

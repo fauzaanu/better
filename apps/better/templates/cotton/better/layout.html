@@ -1,3 +1,111 @@
 <c-layout>
+  <!-- HTMX Script -->
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  
+  <!-- HTMX Loading Indicator Styles -->
+  <style>
+    .htmx-indicator {
+      display: none;
+    }
+    .htmx-request .htmx-indicator {
+      display: inline-block;
+    }
+    .htmx-request.htmx-indicator {
+      display: inline-block;
+    }
+  </style>
+  
+  <!-- HTMX CSRF Configuration -->
+  <script>
+    document.body.addEventListener('htmx:configRequest', function(evt) {
+      evt.detail.headers['X-CSRFToken'] = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    });
+    
+    // Handle target checkbox visual updates
+    document.body.addEventListener('change', function(evt) {
+      if (evt.target.classList.contains('target-checkbox')) {
+        const targetId = evt.target.getAttribute('data-target-id');
+        const targetNameSpan = document.getElementById('target-name-' + targetId);
+        
+        if (targetNameSpan) {
+          if (evt.target.checked) {
+            targetNameSpan.classList.add('line-through', 'text-gray-500');
+            targetNameSpan.classList.remove('text-white');
+          } else {
+            targetNameSpan.classList.remove('line-through', 'text-gray-500');
+            targetNameSpan.classList.add('text-white');
+          }
+        }
+      }
+    });
+    
+    // Handle HTMX loading states
+    document.body.addEventListener('htmx:beforeRequest', function(evt) {
+      if (evt.target.classList.contains('target-checkbox')) {
+        evt.target.disabled = true;
+      }
+    });
+    
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+      if (evt.target.classList.contains('target-checkbox')) {
+        evt.target.disabled = false;
+      }
+    });
+    
+    // Handle HTMX errors
+    document.body.addEventListener('htmx:responseError', function(evt) {
+      console.error('HTMX Error:', evt.detail);
+      // Show user-friendly error message
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'fixed top-4 right-4 bg-red-900 border border-red-700 rounded-lg p-4 z-50';
+      errorDiv.innerHTML = `
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm text-red-300">
+              Failed to update target. Please try again.
+            </p>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(errorDiv);
+      
+      // Remove error message after 5 seconds
+      setTimeout(() => {
+        if (errorDiv.parentNode) {
+          errorDiv.parentNode.removeChild(errorDiv);
+        }
+      }, 5000);
+    });
+  </script>
 
+  <!-- Dark Theme Three-Panel Layout -->
+  <div class="min-h-screen bg-black text-white">
+    <div class="px-4 py-6">
+      <!-- CSRF Token for HTMX requests -->
+      {% csrf_token %}
+      
+      <!-- Two-Panel Grid Layout -->
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-screen">
+        <!-- Main Panel: Today's Targets (75%) -->
+        <div class="lg:col-span-3 bg-zinc-950 border border-zinc-800 rounded-lg p-4">
+          {{ slot }}
+        </div>
+        
+        <!-- Right Sidebar: Today's Scores (25%) -->
+        <div class="lg:col-span-1 bg-zinc-950 border border-zinc-800 rounded-lg p-4">
+          <c-better.today-scores 
+            :current_day="current_day" 
+            :categories_data="categories_data" 
+            :progress_percentage="progress_percentage"
+            :yesterday_day="yesterday_day"
+            :yesterday_categories="yesterday_categories" />
+        </div>
+      </div>
+    </div>
+  </div>
 </c-layout>
