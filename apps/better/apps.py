@@ -7,3 +7,4 @@ class BetterConfig(AppConfig):
 
     def ready(self):
         """Import signal handlers when the app is ready"""
+        from apps.better import signals # noqa

@@ -11,9 +11,9 @@ class TargetCategoryForm(forms.ModelForm):
     
     class Meta:
         model = TargetCategory
-        fields = ['name']
+        fields = ['name', 'description']
     
-    def __init__(self, current_day=None, *args, **kwargs):
+    def __init__(self, *args, current_day=None, **kwargs):
         self.current_day = current_day
         super().__init__(*args, **kwargs)
         
@@ -67,7 +67,7 @@ class TargetForm(forms.ModelForm):
         model = Target
         fields = ['name', 'category', 'importance']
     
-    def __init__(self, current_day=None, *args, **kwargs):
+    def __init__(self, *args, current_day=None, **kwargs):
         self.current_day = current_day
         super().__init__(*args, **kwargs)
         
@@ -244,7 +244,7 @@ class TargetAchievementForm(forms.Form):
             raise ValidationError('Target ID is required.')
         
         try:
-            target = Target.objects.get(id=target_id, is_deleted=False)
+            Target.objects.get(id=target_id, is_deleted=False)
         except Target.DoesNotExist:
             raise ValidationError('Target not found or no longer available.')
         

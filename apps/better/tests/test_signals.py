@@ -21,7 +21,7 @@ class TargetSignalTests(TestCase):
     def test_target_save_triggers_recalculation(self):
         """Test that saving a target triggers score recalculation"""
         # Create target (this will trigger signals)
-        target = Target.objects.create(
+        Target.objects.create(
             name="Exercise",
             category=self.category,
             importance=self.importance_high,
@@ -74,7 +74,7 @@ class TargetSignalTests(TestCase):
             is_achieved=True
         )
         
-        target2 = Target.objects.create(
+        Target.objects.create(
             name="Meditate",
             category=self.category,
             importance=self.importance_low,
@@ -101,7 +101,7 @@ class TargetSignalTests(TestCase):
     
     def test_deleted_target_excluded_from_recalculation(self):
         """Test that soft-deleted targets are excluded from recalculation"""
-        target = Target.objects.create(
+        Target.objects.create(
             name="Exercise",
             category=self.category,
             importance=self.importance_high,
@@ -171,7 +171,7 @@ class ImportanceSignalTests(TestCase):
         importance_medium = Importance.objects.create(label="Medium", score=3)
         
         # Create target using medium importance
-        target3 = Target.objects.create(
+        Target.objects.create(
             name="Meditate",
             category=self.category1,
             importance=importance_medium,
@@ -207,7 +207,7 @@ class TargetCategorySignalTests(TestCase):
     def test_target_category_save_triggers_day_recalculation(self):
         """Test that saving target category triggers day recalculation"""
         # Create target
-        target = Target.objects.create(
+        Target.objects.create(
             name="Exercise",
             category=self.category,
             importance=self.importance,
@@ -231,7 +231,7 @@ class TargetCategorySignalTests(TestCase):
     def test_target_category_delete_triggers_day_recalculation(self):
         """Test that deleting target category triggers day recalculation"""
         # Create target
-        target = Target.objects.create(
+        Target.objects.create(
             name="Exercise",
             category=self.category,
             importance=self.importance,
@@ -244,7 +244,6 @@ class TargetCategorySignalTests(TestCase):
         self.assertGreater(initial_score, 0)
         
         # Delete category
-        category_id = self.category.id
         self.category.delete()
         
         # Refresh day from database
@@ -257,7 +256,7 @@ class TargetCategorySignalTests(TestCase):
     def test_soft_deleted_category_excluded_from_recalculation(self):
         """Test that soft-deleted categories are excluded from recalculation"""
         # Create target
-        target = Target.objects.create(
+        Target.objects.create(
             name="Exercise",
             category=self.category,
             importance=self.importance,

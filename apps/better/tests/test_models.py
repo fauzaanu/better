@@ -112,14 +112,14 @@ class ScoreDayModelTests(TestCase):
             name="Health"
         )
 
-        target1 = Target.objects.create(
+        Target.objects.create(
             name="Exercise",
             category=category,
             importance=self.importance_high,
             is_achieved=True
         )
 
-        target2 = Target.objects.create(
+        Target.objects.create(
             name="Meditate",
             category=category,
             importance=self.importance_low,
@@ -198,7 +198,7 @@ class ScoreDayModelTests(TestCase):
             day=prev_day,
             name="Health"
         )
-        prev_target = Target.objects.create(
+        Target.objects.create(
             name="Exercise",
             category=prev_category,
             importance=self.importance_high,

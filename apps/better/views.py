@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import View
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from datetime import timedelta
 from .models import ScoreDay, TargetCategory, Target, Importance
 from .forms import TargetCategoryForm, SleepWakeTimeForm
@@ -162,7 +162,7 @@ class TargetAchievementView(View):
             # Handle different request types
             return self._handle_response(request, target, current_day, message)
             
-        except Target.DoesNotExist:
+        except Http404:
             return self._handle_error(request, 'Target not found or no longer available.', 404)
         except Exception:
             return self._handle_error(request, 'An error occurred while updating the target.', 500)
