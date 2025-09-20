@@ -10,7 +10,6 @@ dependencies = [
     "redis>=5.0.8",
     "pytz>=2024.1",
     "gunicorn>=23.0.0",
-    "psycopg[binary,pool]>=3.2.1",
     "django-storages[s3]>=1.14.6",
     "django-cotton>=0.9.32",
     "django-debug-toolbar>=5.2.0",
