@@ -1,8 +1,7 @@
 from django.test import TestCase
-from django.utils import timezone
 from datetime import date, timedelta
 
-from ..models import ScoreDay, TargetCategory, Target, Importance
+from apps.better.models import ScoreDay, TargetCategory, Target, Importance
 
 
 class TargetSignalTests(TestCase):

@@ -1,30 +1,17 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import View
-from django.views.generic import CreateView, UpdateView, DeleteView
-from django.urls import reverse_lazy
 from django.contrib import messages
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse
 from datetime import timedelta
 from .models import ScoreDay, TargetCategory, Target, Importance
-from .forms import TargetCategoryForm, TargetForm, TargetAchievementForm, ImportanceForm, SleepWakeTimeForm
+from .forms import TargetCategoryForm, TargetForm, ImportanceForm, SleepWakeTimeForm
 
 
 class DashboardView(View):
-    """
-    Dashboard view for displaying current day's scores and targets with three-panel layout.
-    Requirements: 1.3, 1.5, 5.2, 5.4, 5.5, 6.1, 1.1, 1.4, 8.4
-    """
+    """Display today's dashboard with scores and targets."""
     
     def get(self, request):
-        """
-        Handle GET requests to display dashboard with three-panel layout data.
-        
-        - Retrieves or creates current day's ScoreDay (handles first-time usage)
-        - Retrieves yesterday's ScoreDay for left panel comparison
-        - Prepares context data for all three panels (left, center, right)
-        - Handles edge cases for first day usage when no yesterday data exists
-        - Ensures all data needed for real-time updates is included
-        """
+        """Display dashboard with today's and yesterday's data."""
         # Get or create today's ScoreDay (handles first-time usage - Requirement 5.5)
         current_day = ScoreDay.get_or_create_today()
         
@@ -107,7 +94,7 @@ class DashboardView(View):
         return render(request, "better/dashboard.html", context)
     
     def post(self, request):
-        """Handle POST requests for updating sleep/wake times"""
+        """Update sleep and wake times."""
         current_day = ScoreDay.get_or_create_today()
         sleep_wake_form = SleepWakeTimeForm(data=request.POST, instance=current_day)
         
@@ -173,170 +160,168 @@ class DashboardView(View):
             return render(request, "better/dashboard.html", context)
 
 
-class TargetCategoryCreateView(CreateView):
-    """
-    View for creating new target categories for the current day.
-    Requirements: 6.3, 2.2
-    """
-    model = TargetCategory
-    form_class = TargetCategoryForm
-    template_name = 'better/category_form.html'
-    success_url = reverse_lazy('better:dashboard')
+class TargetCategoryCreateView(View):
+    """Create new target categories."""
     
-    def get_form_kwargs(self):
-        """Pass current day to form for validation"""
-        kwargs = super().get_form_kwargs()
-        kwargs['current_day'] = ScoreDay.get_or_create_today()
-        return kwargs
-    
-    def form_valid(self, form):
-        """Set the day to current day before saving"""
+    def get(self, request):
+        """Show category creation form."""
         current_day = ScoreDay.get_or_create_today()
-        form.instance.day = current_day
+        form = TargetCategoryForm(current_day=current_day)
         
-        # Initialize scores as null (will be calculated by signals)
-        form.instance.score = None
-        form.instance.max_score = None
+        context = {
+            'form': form,
+            'page_title': 'Create New Category',
+            'submit_text': 'Create Category'
+        }
         
-        response = super().form_valid(form)
-        
-        messages.success(
-            self.request, 
-            f'Category "{form.instance.name}" has been created successfully.'
-        )
-        
-        return response
+        return render(request, 'better/category_form.html', context)
     
-    def get_context_data(self, **kwargs):
-        """Add additional context for template"""
-        context = super().get_context_data(**kwargs)
-        context['page_title'] = 'Create New Category'
-        context['submit_text'] = 'Create Category'
-        return context
+    def post(self, request):
+        """Create new category."""
+        current_day = ScoreDay.get_or_create_today()
+        form = TargetCategoryForm(request.POST, current_day=current_day)
+        
+        if form.is_valid():
+            # Set the day to current day before saving
+            category = form.save(commit=False)
+            category.day = current_day
+            
+            # Initialize scores as null (will be calculated by signals)
+            category.score = None
+            category.max_score = None
+            category.save()
+            
+            messages.success(
+                request, 
+                f'Category "{category.name}" has been created successfully.'
+            )
+            
+            return redirect('better:dashboard')
+        
+        # Form has errors, re-render with errors
+        context = {
+            'form': form,
+            'page_title': 'Create New Category',
+            'submit_text': 'Create Category'
+        }
+        
+        return render(request, 'better/category_form.html', context)
 
 
-class TargetCategoryUpdateView(UpdateView):
-    """
-    View for updating existing target categories.
-    Only affects current day's categories.
-    Requirements: 6.4, 2.3
-    """
-    model = TargetCategory
-    form_class = TargetCategoryForm
-    template_name = 'better/category_form.html'
-    success_url = reverse_lazy('better:dashboard')
+class TargetCategoryUpdateView(View):
+    """Update existing target categories."""
     
-    def get_queryset(self):
-        """Ensure only current day's categories can be updated"""
+    def get_object(self, pk):
+        """Get category for today."""
         current_day = ScoreDay.get_or_create_today()
-        return TargetCategory.objects.filter(
+        return get_object_or_404(
+            TargetCategory,
+            pk=pk,
             day=current_day,
             is_deleted=False
         )
     
-    def get_form_kwargs(self):
-        """Pass current day to form for validation"""
-        kwargs = super().get_form_kwargs()
-        kwargs['current_day'] = self.object.day
-        return kwargs
-    
-    def form_valid(self, form):
-        """Handle successful form submission"""
-        response = super().form_valid(form)
+    def get(self, request, pk):
+        """Show category update form."""
+        category = self.get_object(pk)
+        form = TargetCategoryForm(instance=category, current_day=category.day)
         
-        messages.success(
-            self.request, 
-            f'Category "{form.instance.name}" has been updated successfully.'
-        )
+        context = {
+            'form': form,
+            'object': category,
+            'page_title': f'Update Category: {category.name}',
+            'submit_text': 'Update Category',
+            'is_update': True
+        }
         
-        return response
+        return render(request, 'better/category_form.html', context)
     
-    def get_context_data(self, **kwargs):
-        """Add additional context for template"""
-        context = super().get_context_data(**kwargs)
-        context['page_title'] = f'Update Category: {self.object.name}'
-        context['submit_text'] = 'Update Category'
-        context['is_update'] = True
-        return context
+    def post(self, request, pk):
+        """Update category."""
+        category = self.get_object(pk)
+        form = TargetCategoryForm(request.POST, instance=category, current_day=category.day)
+        
+        if form.is_valid():
+            updated_category = form.save()
+            
+            messages.success(
+                request, 
+                f'Category "{updated_category.name}" has been updated successfully.'
+            )
+            
+            return redirect('better:dashboard')
+        
+        # Form has errors, re-render with errors
+        context = {
+            'form': form,
+            'object': category,
+            'page_title': f'Update Category: {category.name}',
+            'submit_text': 'Update Category',
+            'is_update': True
+        }
+        
+        return render(request, 'better/category_form.html', context)
 
 
-class TargetCategoryDeleteView(DeleteView):
-    """
-    View for deleting target categories from the current day.
-    Uses soft delete to maintain data integrity.
-    Requirements: 6.5, 2.4
-    """
-    model = TargetCategory
-    template_name = 'better/category_confirm_delete.html'
-    success_url = reverse_lazy('better:dashboard')
+class TargetCategoryDeleteView(View):
+    """Delete target categories using soft delete."""
     
-    def get_queryset(self):
-        """Ensure only current day's categories can be deleted"""
+    def get_object(self, pk):
+        """Get category for today."""
         current_day = ScoreDay.get_or_create_today()
-        return TargetCategory.objects.filter(
+        return get_object_or_404(
+            TargetCategory,
+            pk=pk,
             day=current_day,
             is_deleted=False
         )
     
-    def delete(self, request, *args, **kwargs):
-        """
-        Perform soft delete instead of hard delete.
-        Also soft delete all associated targets.
-        """
-        self.object = self.get_object()
-        category_name = self.object.name
+    def get(self, request, pk):
+        """Show delete confirmation page."""
+        category = self.get_object(pk)
+        
+        # Get count of targets that will be affected
+        target_count = category.targets.filter(is_deleted=False).count()
+        
+        context = {
+            'object': category,
+            'page_title': f'Delete Category: {category.name}',
+            'target_count': target_count,
+            'category_name': category.name
+        }
+        
+        return render(request, 'better/category_confirm_delete.html', context)
+    
+    def post(self, request, pk):
+        """Soft delete category and its targets."""
+        category = self.get_object(pk)
+        category_name = category.name
         
         # Soft delete the category
-        self.object.is_deleted = True
-        self.object.save()
+        category.is_deleted = True
+        category.save()
         
         # Soft delete all associated targets
-        self.object.targets.filter(is_deleted=False).update(is_deleted=True)
+        category.targets.filter(is_deleted=False).update(is_deleted=True)
         
         # Recalculate scores after deletion
-        self.object.day.calculate_scores()
+        category.day.calculate_scores()
         
         messages.success(
             request, 
             f'Category "{category_name}" and all its targets have been removed successfully.'
         )
         
-        return redirect(self.success_url)
-    
-    def get_context_data(self, **kwargs):
-        """Add additional context for template"""
-        context = super().get_context_data(**kwargs)
-        
-        # Get count of targets that will be affected
-        target_count = self.object.targets.filter(is_deleted=False).count()
-        
-        context['page_title'] = f'Delete Category: {self.object.name}'
-        context['target_count'] = target_count
-        context['category_name'] = self.object.name
-        
-        return context
+        return redirect('better:dashboard')
 
 
-class TargetCreateView(CreateView):
-    """
-    View for creating new targets within categories.
-    Requirements: 6.2, 6.6, 4.2
-    """
-    model = Target
-    form_class = TargetForm
-    template_name = 'better/target_form.html'
-    success_url = reverse_lazy('better:dashboard')
+class TargetCreateView(View):
+    """Create new targets within categories."""
     
-    def get_form_kwargs(self):
-        """Pass current day to form for category filtering"""
-        kwargs = super().get_form_kwargs()
-        kwargs['current_day'] = ScoreDay.get_or_create_today()
-        return kwargs
-    
-    def get_initial(self):
-        """Pre-select category if provided in URL parameters"""
-        initial = super().get_initial()
-        category_id = self.request.GET.get('category')
+    def get_initial_data(self, request):
+        """Pre-select category from URL parameter."""
+        initial = {}
+        category_id = request.GET.get('category')
         if category_id:
             try:
                 current_day = ScoreDay.get_or_create_today()
@@ -350,51 +335,59 @@ class TargetCreateView(CreateView):
                 pass  # Invalid category ID, ignore
         return initial
     
-    def form_valid(self, form):
-        """Set default values before saving"""
-        # Initialize is_achieved as false (default)
-        form.instance.is_achieved = False
-        
-        response = super().form_valid(form)
-        
-        messages.success(
-            self.request, 
-            f'Target "{form.instance.name}" has been created successfully in category "{form.instance.category.name}".'
-        )
-        
-        return response
-    
-    def get_context_data(self, **kwargs):
-        """Add additional context for template"""
-        context = super().get_context_data(**kwargs)
+    def get(self, request):
+        """Show target creation form."""
         current_day = ScoreDay.get_or_create_today()
+        initial = self.get_initial_data(request)
+        form = TargetForm(initial=initial, current_day=current_day)
         
-        context['page_title'] = 'Create New Target'
-        context['submit_text'] = 'Create Target'
-        context['current_day'] = current_day
-        context['categories_count'] = current_day.categories.filter(is_deleted=False).count()
-        context['importance_levels'] = Importance.objects.all().order_by('-score')
+        context = {
+            'form': form,
+            'page_title': 'Create New Target',
+            'submit_text': 'Create Target',
+            'current_day': current_day,
+            'categories_count': current_day.categories.filter(is_deleted=False).count(),
+            'importance_levels': Importance.objects.all().order_by('-score')
+        }
         
-        return context
+        return render(request, 'better/target_form.html', context)
+    
+    def post(self, request):
+        """Create new target."""
+        current_day = ScoreDay.get_or_create_today()
+        form = TargetForm(request.POST, current_day=current_day)
+        
+        if form.is_valid():
+            # Set default values before saving
+            target = form.save(commit=False)
+            target.is_achieved = False  # Initialize as not achieved
+            target.save()
+            
+            messages.success(
+                request, 
+                f'Target "{target.name}" has been created successfully in category "{target.category.name}".'
+            )
+            
+            return redirect('better:dashboard')
+        
+        # Form has errors, re-render with errors
+        context = {
+            'form': form,
+            'page_title': 'Create New Target',
+            'submit_text': 'Create Target',
+            'current_day': current_day,
+            'categories_count': current_day.categories.filter(is_deleted=False).count(),
+            'importance_levels': Importance.objects.all().order_by('-score')
+        }
+        
+        return render(request, 'better/target_form.html', context)
 
 
 class TargetAchievementView(View):
-    """
-    View for toggling target achievement status.
-    Handles POST requests to update target completion and trigger score recalculation.
-    Supports HTMX requests by returning partial HTML templates.
-    Requirements: 3.1, 3.2, 3.3, 3.4, 4.3
-    """
+    """Toggle target achievement status with HTMX support."""
     
     def post(self, request, pk):
-        """
-        Handle POST requests to toggle target achievement.
-        
-        - Validates target exists and belongs to current day
-        - Toggles achievement status
-        - Triggers automatic score recalculation via model method
-        - Returns partial HTML templates for HTMX requests or redirects for form submissions
-        """
+        """Toggle target achievement and recalculate scores."""
         try:
             # Get target and ensure it belongs to current day and is not deleted
             current_day = ScoreDay.get_or_create_today()
@@ -404,9 +397,6 @@ class TargetAchievementView(View):
                 category__day=current_day,
                 is_deleted=False
             )
-            
-            # Store previous state for response message
-            was_achieved = target.is_achieved
             
             # Toggle achievement status and trigger recalculation
             target.toggle_achievement()
@@ -421,7 +411,7 @@ class TargetAchievementView(View):
                 context = self._get_scores_context(current_day)
                 
                 # Return multiple updates using HTMX response headers
-                response = render(request, 'cotton/better/today-scores.html', context)
+                response = render(request, 'cotton/better/today_scores.html', context)
                 
                 # Add header to trigger target list update as well
                 response['HX-Trigger-After-Swap'] = f'updateTarget-{target.id}'
@@ -448,7 +438,7 @@ class TargetAchievementView(View):
             
             # Handle HTMX requests
             if request.headers.get('HX-Request'):
-                return render(request, 'cotton/better/error-message.html', {
+                return render(request, 'cotton/better/error_message.html', {
                     'error_message': error_message
                 }, status=404)
             
@@ -463,12 +453,12 @@ class TargetAchievementView(View):
             messages.error(request, error_message)
             return redirect('better:dashboard')
         
-        except Exception as e:
+        except Exception:
             error_message = 'An error occurred while updating the target.'
             
             # Handle HTMX requests
             if request.headers.get('HX-Request'):
-                return render(request, 'cotton/better/error-message.html', {
+                return render(request, 'cotton/better/error_message.html', {
                     'error_message': error_message
                 }, status=500)
             
@@ -484,11 +474,7 @@ class TargetAchievementView(View):
             return redirect('better:dashboard')
     
     def _get_scores_context(self, current_day):
-        """
-        Get context data for the today-scores component.
-        Returns the same data structure as used in the dashboard for consistency.
-        Requirements: 3.1, 3.2, 3.3, 3.4
-        """
+        """Get context data for today-scores component."""
         # Get all categories for the current day with their targets (optimized queries)
         categories = current_day.categories.filter(is_deleted=False).prefetch_related(
             'targets__importance'
@@ -524,30 +510,16 @@ class TargetAchievementView(View):
         }
     
     def get(self, request, pk):
-        """
-        Handle GET requests by redirecting to dashboard.
-        Achievement toggling should only be done via POST for security.
-        """
+        """Redirect to dashboard for security."""
         messages.info(request, 'Target achievement can only be updated via form submission.')
         return redirect('better:dashboard')
 
 
 class ImportanceManagementView(View):
-    """
-    View for managing importance levels with CRUD operations.
-    Handles both GET requests to display current importance levels
-    and POST requests for creating and updating importance levels.
-    Requirements: 6.7, 3.1, 3.2, 3.3, 3.5
-    """
+    """Manage importance levels with CRUD operations."""
     
     def get(self, request):
-        """
-        Handle GET requests to display current importance levels.
-        
-        - Retrieves all existing importance levels ordered by score (descending)
-        - Prepares context data with importance levels and creation form
-        - Returns context for template rendering
-        """
+        """Display importance levels and creation form."""
         # Get all importance levels ordered by score (highest first)
         importance_levels = Importance.objects.all().order_by('-score')
         
@@ -565,14 +537,7 @@ class ImportanceManagementView(View):
         return render(request, 'better/importance_management.html', context)
     
     def post(self, request):
-        """
-        Handle POST requests for creating and updating importance levels.
-        
-        - Processes form data for creating new importance levels
-        - Validates form data and handles errors
-        - Triggers global recalculation when importance scores change
-        - Returns appropriate response based on success/failure
-        """
+        """Handle create, update, and delete actions for importance levels."""
         action = request.POST.get('action', 'create')
         
         if action == 'create':
@@ -586,10 +551,7 @@ class ImportanceManagementView(View):
             return redirect('better:importance-manage')
     
     def _handle_create(self, request):
-        """
-        Handle creation of new importance levels.
-        Requirements: 6.7, 3.1, 3.2
-        """
+        """Create new importance level."""
         form = ImportanceForm(request.POST)
         
         if form.is_valid():
@@ -621,10 +583,7 @@ class ImportanceManagementView(View):
             return render(request, 'better/importance_management.html', context)
     
     def _handle_update(self, request):
-        """
-        Handle updating existing importance levels.
-        Requirements: 6.7, 3.3, 3.5
-        """
+        """Update existing importance level."""
         importance_id = request.POST.get('importance_id')
         
         if not importance_id:
@@ -633,7 +592,6 @@ class ImportanceManagementView(View):
         
         try:
             importance = get_object_or_404(Importance, id=importance_id)
-            original_label = importance.label
             original_score = importance.score
             
             form = ImportanceForm(request.POST, instance=importance)
@@ -671,15 +629,12 @@ class ImportanceManagementView(View):
         except Importance.DoesNotExist:
             messages.error(request, 'Importance level not found.')
             return redirect('better:importance-manage')
-        except Exception as e:
+        except Exception:
             messages.error(request, 'An error occurred while updating the importance level.')
             return redirect('better:importance-manage')
     
     def _handle_delete(self, request):
-        """
-        Handle deletion of importance levels.
-        Requirements: 6.7, 3.5
-        """
+        """Delete importance level."""
         importance_id = request.POST.get('importance_id')
         
         if not importance_id:
@@ -722,19 +677,16 @@ class ImportanceManagementView(View):
         except Importance.DoesNotExist:
             messages.error(request, 'Importance level not found.')
             return redirect('better:importance-manage')
-        except Exception as e:
+        except Exception:
             messages.error(request, 'An error occurred while deleting the importance level.')
             return redirect('better:importance-manage')
 
 
 class DayView(View):
-    """
-    View for displaying a specific day's scores and targets.
-    Allows viewing past days and updating sleep/wake times.
-    """
+    """Display specific day's scores and targets."""
     
     def get(self, request, pk):
-        """Handle GET requests to display specific day's data"""
+        """Display specific day's data."""
         # Get the ScoreDay by ID
         try:
             score_day = get_object_or_404(ScoreDay, pk=pk, is_deleted=False)
@@ -815,7 +767,7 @@ class DayView(View):
         return render(request, "better/dashboard.html", context)
     
     def post(self, request, pk):
-        """Handle POST requests for updating sleep/wake times for specific day"""
+        """Update sleep/wake times for specific day."""
         try:
             score_day = get_object_or_404(ScoreDay, pk=pk, is_deleted=False)
             target_date = score_day.day

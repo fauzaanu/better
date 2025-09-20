@@ -1,6 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from .models import TargetCategory, Target, Importance, ScoreDay
+from .models import TargetCategory, Target, Importance
 
 
 class TargetCategoryForm(forms.ModelForm):

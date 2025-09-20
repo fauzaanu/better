@@ -7,4 +7,3 @@ class BetterConfig(AppConfig):
 
     def ready(self):
         """Import signal handlers when the app is ready"""
-        import apps.better.models  # This will register the signal handlers
