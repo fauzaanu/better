@@ -1,0 +1,1 @@
+Try to keep views as thin as possible. Move business logic to models as much as possible, but do not do it too excessively so that maintainability is affected. If a view takes longer than 75 lines of code optimization is nessesary
