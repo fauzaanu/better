@@ -12,13 +12,6 @@ class TargetCategoryForm(forms.ModelForm):
     class Meta:
         model = TargetCategory
         fields = ['name']
-        widgets = {
-            'name': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Enter category name',
-                'maxlength': 200
-            })
-        }
     
     def __init__(self, current_day=None, *args, **kwargs):
         self.current_day = current_day
@@ -73,19 +66,6 @@ class TargetForm(forms.ModelForm):
     class Meta:
         model = Target
         fields = ['name', 'category', 'importance']
-        widgets = {
-            'name': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Enter target name',
-                'maxlength': 200
-            }),
-            'category': forms.Select(attrs={
-                'class': 'form-control'
-            }),
-            'importance': forms.Select(attrs={
-                'class': 'form-control'
-            })
-        }
     
     def __init__(self, current_day=None, *args, **kwargs):
         self.current_day = current_day
@@ -178,18 +158,6 @@ class ImportanceForm(forms.ModelForm):
     class Meta:
         model = Importance
         fields = ['label', 'score']
-        widgets = {
-            'label': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Enter importance label (e.g., Critical, Important)',
-                'maxlength': 200
-            }),
-            'score': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Enter numeric score (1 or higher)',
-                'min': 1
-            })
-        }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -256,7 +224,7 @@ class TargetAchievementForm(forms.Form):
     Requirements: 6.2
     """
     
-    target_id = forms.IntegerField(widget=forms.HiddenInput())
+    target_id = forms.IntegerField()
     
     def __init__(self, target=None, *args, **kwargs):
         self.target = target
