@@ -127,15 +127,7 @@ SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 SOCIALACCOUNT_STORE_TOKENS = True
 SOCIALACCOUNT_ONLY = False
 
-SOCIALACCOUNT_PROVIDERS = {
-    'telegram': {
-        'APP': {
-            'client_id': os.getenv("TELEGRAM_BOT_ID"),
-            'secret': os.getenv("TELEGRAM_BOT_TOKEN"),
-        },
-        'AUTH_PARAMS': {'auth_date_validity': 30},
-    }
-}
+
 
 SITE_VERSION = "0.0.1"
 SITE_NAME = os.getenv("SITE_NAME")
