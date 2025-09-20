@@ -62,23 +62,11 @@ ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'https'
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
-# POSTGRES
-# noinspection DuplicatedCode
+# SQLite
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ["PGDATABASE"],
-        "USER": os.environ["PGUSER"],
-        "PASSWORD": os.environ["PGPASSWORD"],
-        "HOST": os.environ["PGHOST"],
-        "PORT": os.environ["PGPORT"],
-        "OPTIONS": {
-            "pool": {
-                'min_size': int(os.getenv('DB_POOL_MIN_SIZE', 5)),
-                'max_size': int(os.getenv('DB_POOL_MAX_SIZE', 100)),
-                'timeout': int(os.getenv('DB_POOL_TIMEOUT', 500)),
-            }
-        },
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
 
