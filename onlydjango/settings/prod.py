@@ -72,15 +72,10 @@ DATABASES = {
 
 # Cache settings
 # https://docs.djangoproject.com/en/5.0/topics/cache/#setting-up-the-cache
-
-REDIS_URL = os.environ["REDIS_URL"]
+# Using dummy cache for simplicity - can be changed to Redis/Memcached if needed
 CACHES = {
     "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": [
-            REDIS_URL,  # primary
-        ],
-        "KEY_PREFIX": SITE_NAME, #noqa
+        "BACKEND": "django.core.cache.backends.dummy.DummyCache",
     }
 }
 
@@ -106,32 +101,13 @@ LOGGING = {
         "console": {
             "class": "logging.StreamHandler",
         },
-        "telegram": {
-            "level": "INFO",
-            "class": "onlydjango.helpers.telegram_logging.TelegramBotHandler",
-            "telegram_bot_token": os.environ["TELEGRAM_BOT_TOKEN"],
-            "telegram_chat_id": os.environ["TELEGRAM_CHAT_ID"],
-            "formatter": "telegram",
-            "filters": ["exclude_disallowed_host"],
-        },
-        "error_handler": {
-            "level": "ERROR",
-            "class": "onlydjango.helpers.telegram_logging.TelegramBotHandler",
-            "telegram_bot_token": os.environ["TELEGRAM_BOT_TOKEN"],
-            "telegram_chat_id": os.environ["TELEGRAM_CHAT_ID"],
-            "formatter": "telegram",
-            "filters": ["exclude_disallowed_host"],
-        },
         "mail_admins": {
             "level": "ERROR",
             "class": "django.utils.log.AdminEmailHandler",
         },
     },
-    "formatters": {
-        "telegram": {"format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"}
-    },
     "root": {
-        "handlers": ["error_handler", "console"],
+        "handlers": ["mail_admins", "console"],
         "level": "INFO",
         "propagate": True,
     },
