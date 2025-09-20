@@ -48,8 +48,8 @@ class Command(BaseCommand):
                 'description': 'Targets that help you add status in society or protect your reputation. Examples: build professional image, expand network, develop valued skills, manage public perception.'
             },
             {
-                'name': 'Love',
-                'description': 'Targets that help you add love and connection or remove loneliness. Examples: strengthen relationships, make new connections, show care for others, build meaningful bonds.'
+                'name': 'Connection',
+                'description': 'Targets that help you add meaningful relationships and connection or remove loneliness. Examples: strengthen relationships, make new connections, show care for others, build meaningful bonds.'
             },
             {
                 'name': 'Safety',

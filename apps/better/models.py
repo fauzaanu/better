@@ -75,6 +75,34 @@ class ScoreDay(BaseModel):
             
         return round(percentage * factor / 100, 1)
 
+    def get_display_score(self, baseline=10):
+        """Return score multiplied by baseline for display purposes"""
+        if not self.max_score or self.max_score == 0:
+            return 0
+        
+        percentage = (self.score / self.max_score)
+        return round(percentage * baseline, 1)
+
+    def get_score_color_class(self):
+        """Return Tailwind color class based on score percentage"""
+        if not self.max_score or self.max_score == 0:
+            return "text-zinc-500"
+        
+        percentage = (self.score / self.max_score) * 100
+        
+        if percentage >= 90:
+            return "text-green-400"
+        elif percentage >= 75:
+            return "text-green-500"
+        elif percentage >= 60:
+            return "text-yellow-400"
+        elif percentage >= 40:
+            return "text-orange-400"
+        elif percentage >= 20:
+            return "text-red-400"
+        else:
+            return "text-red-500"
+
     def copy_previous_day_categories(self):
         """Copy target categories from previous day"""
         previous_day = ScoreDay.objects.filter(
@@ -232,6 +260,34 @@ class TargetCategory(BaseModel):
             factor = 10
             
         return round(percentage * factor / 100, 1)
+
+    def get_display_score(self, baseline=10):
+        """Return score multiplied by baseline for display purposes"""
+        if not self.max_score or self.max_score == 0:
+            return 0
+        
+        percentage = (self.score / self.max_score)
+        return round(percentage * baseline, 1)
+
+    def get_score_color_class(self):
+        """Return Tailwind color class based on score percentage"""
+        if not self.max_score or self.max_score == 0:
+            return "text-zinc-500"
+        
+        percentage = (self.score / self.max_score) * 100
+        
+        if percentage >= 90:
+            return "text-green-400"
+        elif percentage >= 75:
+            return "text-green-500"
+        elif percentage >= 60:
+            return "text-yellow-400"
+        elif percentage >= 40:
+            return "text-orange-400"
+        elif percentage >= 20:
+            return "text-red-400"
+        else:
+            return "text-red-500"
 
     def get_yesterday_change(self):
         """Calculate percentage change compared to yesterday's same category"""

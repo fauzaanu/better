@@ -1,3 +1,5 @@
+{% load score_filters %}
+
 <c-vars 
   current_day="{{ current_day }}" 
   categories_data="{{ categories_data }}" 
@@ -16,19 +18,19 @@
     <!-- Today's Total Score -->
     <div class="bg-zinc-950 border border-zinc-800 rounded p-4 w-36 h-32 flex flex-col items-center justify-center">
       <div class="text-sm text-zinc-400">Daily Score</div>
-      <div class="text-xl font-bold text-zinc-200" id="daily-score">
-        {{ current_day.score|default:0 }}/{{ current_day.max_score|default:0 }}
+      <div class="text-xl font-bold {{ current_day|score_color_class }}" id="daily-score">
+        {{ current_day|display_score }}
       </div>
       {% if yesterday_day %}
         <div class="text-xs text-zinc-500 mt-1">
-          Yesterday: {{ yesterday_day.score|default:0 }}/{{ yesterday_day.max_score|default:0 }}
+          Yesterday: {{ yesterday_day|display_score }}
         </div>
       {% endif %}
       {% if current_day.yesterday_change %}
         {% if current_day.yesterday_change > 0 %}
-          <div class="text-xs text-zinc-300">+{{ current_day.yesterday_change|floatformat:0 }}</div>
+          <div class="text-xs text-green-400">+{{ current_day.yesterday_change|floatformat:0 }}%</div>
         {% elif current_day.yesterday_change < 0 %}
-          <div class="text-xs text-zinc-400">{{ current_day.yesterday_change|floatformat:0 }}</div>
+          <div class="text-xs text-red-400">{{ current_day.yesterday_change|floatformat:0 }}%</div>
         {% endif %}
       {% endif %}
     </div>
@@ -36,25 +38,25 @@
     <!-- Today's Category Scores -->
     {% for category_data in categories_data %}
       <div class="bg-zinc-950 border border-zinc-800 rounded p-4 w-36 h-32 flex flex-col items-center justify-center" id="category-{{ category_data.category.id }}">
-        <div class="text-sm text-zinc-400 text-center truncate w-full">{{ category_data.category.name }} Score</div>
-        <div class="text-xl font-bold text-zinc-200 category-score">
-          {{ category_data.category.score|default:0 }}/{{ category_data.category.max_score|default:0 }}
+        <div class="text-sm text-zinc-400 text-center truncate w-full">{{ category_data.category.name }}</div>
+        <div class="text-xl font-bold {{ category_data.category|score_color_class }} category-score">
+          {{ category_data.category|display_score }}
         </div>
         
         <!-- Find yesterday's score for this category -->
         {% for yesterday_cat in yesterday_categories %}
           {% if yesterday_cat.category.name == category_data.category.name %}
             <div class="text-xs text-zinc-500 mt-1">
-              Yesterday: {{ yesterday_cat.category.score|default:0 }}/{{ yesterday_cat.category.max_score|default:0 }}
+              Yesterday: {{ yesterday_cat.category|display_score }}
             </div>
           {% endif %}
         {% endfor %}
         
         {% if category_data.category.yesterday_change %}
           {% if category_data.category.yesterday_change > 0 %}
-            <div class="text-xs text-zinc-300">+{{ category_data.category.yesterday_change|floatformat:0 }}</div>
+            <div class="text-xs text-green-400">+{{ category_data.category.yesterday_change|floatformat:0 }}%</div>
           {% elif category_data.category.yesterday_change < 0 %}
-            <div class="text-xs text-zinc-400">{{ category_data.category.yesterday_change|floatformat:0 }}</div>
+            <div class="text-xs text-red-400">{{ category_data.category.yesterday_change|floatformat:0 }}%</div>
           {% endif %}
         {% endif %}
       </div>
