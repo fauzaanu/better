@@ -2,8 +2,9 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.utils import timezone
 from django.contrib.messages import get_messages
-from datetime import timedelta
+from datetime import timedelta, time
 from apps.better.models import ScoreDay, TargetCategory, Target, Importance
+from apps.better.forms import SleepWakeTimeForm
 
 
 class BaseViewTestCase(TestCase):
@@ -85,6 +86,64 @@ class DashboardViewTestCase(BaseViewTestCase):
         self.score_day.refresh_from_db()
         self.assertIsNotNone(self.score_day.wake_time)
         self.assertIsNotNone(self.score_day.sleep_time)
+        
+        # Check success message
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any('updated successfully' in str(m) for m in messages))
+    
+    def test_post_dashboard_cross_day_sleep_time(self):
+        """Test that sleep time after midnight (next day) works correctly."""
+        response = self.client.post(reverse('better:dashboard'), {
+            'wake_time': '07:00',
+            'sleep_time': '01:00'  # 1 AM next day
+        })
+        
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('better:dashboard'))
+        
+        # Check that the score day was updated
+        self.score_day.refresh_from_db()
+        self.assertIsNotNone(self.score_day.wake_time)
+        self.assertIsNotNone(self.score_day.sleep_time)
+        
+        # Convert to local time for comparison (timezone-aware)
+        wake_local = self.score_day.wake_time.astimezone()
+        sleep_local = self.score_day.sleep_time.astimezone()
+        
+        # Verify that sleep time is on the next day
+        self.assertEqual(wake_local.hour, 7)
+        self.assertEqual(sleep_local.hour, 1)
+        self.assertEqual(sleep_local.date(), wake_local.date() + timedelta(days=1))
+        
+        # Check success message
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any('updated successfully' in str(m) for m in messages))
+    
+    def test_post_dashboard_late_night_sleep_time(self):
+        """Test that late night sleep time (before midnight) works correctly."""
+        response = self.client.post(reverse('better:dashboard'), {
+            'wake_time': '06:30',
+            'sleep_time': '23:30'  # 11:30 PM same day
+        })
+        
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('better:dashboard'))
+        
+        # Check that the score day was updated
+        self.score_day.refresh_from_db()
+        self.assertIsNotNone(self.score_day.wake_time)
+        self.assertIsNotNone(self.score_day.sleep_time)
+        
+        # Convert to local time for comparison (timezone-aware)
+        wake_local = self.score_day.wake_time.astimezone()
+        sleep_local = self.score_day.sleep_time.astimezone()
+        
+        # Verify that sleep time is on the same day (since 23:30 > 06:30)
+        self.assertEqual(wake_local.hour, 6)
+        self.assertEqual(wake_local.minute, 30)
+        self.assertEqual(sleep_local.hour, 23)
+        self.assertEqual(sleep_local.minute, 30)
+        self.assertEqual(sleep_local.date(), wake_local.date())
         
         # Check success message
         messages = list(get_messages(response.wsgi_request))
@@ -469,6 +528,34 @@ class DayViewTestCase(BaseViewTestCase):
         messages = list(get_messages(response.wsgi_request))
         self.assertTrue(any('updated' in str(m) for m in messages))
     
+    def test_post_cross_day_sleep_time_for_specific_day(self):
+        """Test that cross-day sleep time works for specific day views."""
+        response = self.client.post(reverse('better:day-view', kwargs={'pk': self.yesterday_score_day.pk}), {
+            'wake_time': '06:00',
+            'sleep_time': '02:00'  # 2 AM next day
+        })
+        
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('better:day-view', kwargs={'pk': self.yesterday_score_day.pk}))
+        
+        # Check that the score day was updated
+        self.yesterday_score_day.refresh_from_db()
+        self.assertIsNotNone(self.yesterday_score_day.wake_time)
+        self.assertIsNotNone(self.yesterday_score_day.sleep_time)
+        
+        # Convert to local time for comparison (timezone-aware)
+        wake_local = self.yesterday_score_day.wake_time.astimezone()
+        sleep_local = self.yesterday_score_day.sleep_time.astimezone()
+        
+        # Verify that sleep time is on the next day
+        self.assertEqual(wake_local.hour, 6)
+        self.assertEqual(sleep_local.hour, 2)
+        self.assertEqual(sleep_local.date(), wake_local.date() + timedelta(days=1))
+        
+        # Check success message
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any('updated' in str(m) for m in messages))
+    
     def test_get_nonexistent_day_returns_404(self):
         """Test that accessing non-existent day returns 404."""
         response = self.client.get(reverse('better:day-view', kwargs={'pk': 9999}))
@@ -481,3 +568,258 @@ class DayViewTestCase(BaseViewTestCase):
         
         response = self.client.get(reverse('better:day-view', kwargs={'pk': self.score_day.pk}))
         self.assertEqual(response.status_code, 404)
+
+
+class DayNotesViewTestCase(BaseViewTestCase):
+    """Test cases for DayNotesView."""
+    
+    def test_post_updates_day_notes_with_htmx(self):
+        """Test that HTMX POST request updates day notes."""
+        notes_text = "Had a great day today! Accomplished all my goals."
+        
+        response = self.client.post(
+            reverse('better:day-notes', kwargs={'pk': self.score_day.pk}),
+            {'notes': notes_text},
+            HTTP_HX_REQUEST='true'
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'better/dashboard.html')
+        
+        # Check that notes were saved
+        self.score_day.refresh_from_db()
+        self.assertEqual(self.score_day.notes, notes_text)
+    
+    def test_post_updates_day_notes_without_htmx(self):
+        """Test that non-HTMX POST request updates notes and redirects."""
+        notes_text = "Another productive day!"
+        
+        response = self.client.post(
+            reverse('better:day-notes', kwargs={'pk': self.score_day.pk}),
+            {'notes': notes_text}
+        )
+        
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('better:day-view', kwargs={'pk': self.score_day.pk}))
+        
+        # Check that notes were saved
+        self.score_day.refresh_from_db()
+        self.assertEqual(self.score_day.notes, notes_text)
+        
+        # Check success message
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any('notes updated successfully' in str(m) for m in messages))
+    
+    def test_post_with_empty_notes_clears_field(self):
+        """Test that posting empty notes clears the field."""
+        # First set some notes
+        self.score_day.notes = "Some notes"
+        self.score_day.save()
+        
+        response = self.client.post(
+            reverse('better:day-notes', kwargs={'pk': self.score_day.pk}),
+            {'notes': '   '}  # Whitespace only
+        )
+        
+        self.assertEqual(response.status_code, 302)
+        
+        # Check that notes were cleared
+        self.score_day.refresh_from_db()
+        self.assertEqual(self.score_day.notes, '')
+    
+    def test_post_nonexistent_day_returns_404(self):
+        """Test that accessing non-existent day returns 404."""
+        response = self.client.post(reverse('better:day-notes', kwargs={'pk': 9999}), {'notes': 'test'})
+        self.assertEqual(response.status_code, 404)
+    
+    def test_post_deleted_day_returns_404(self):
+        """Test that accessing soft-deleted day returns 404."""
+        self.score_day.is_deleted = True
+        self.score_day.save()
+        
+        response = self.client.post(reverse('better:day-notes', kwargs={'pk': self.score_day.pk}), {'notes': 'test'})
+        self.assertEqual(response.status_code, 404)
+
+
+class TargetNotesViewTestCase(BaseViewTestCase):
+    """Test cases for TargetNotesView."""
+    
+    def test_post_updates_target_notes_with_htmx(self):
+        """Test that HTMX POST request updates target notes."""
+        notes_text = "This was harder than expected, but I pushed through!"
+        
+        response = self.client.post(
+            reverse('better:target-notes', kwargs={'pk': self.target.pk}),
+            {'notes': notes_text},
+            HTTP_HX_REQUEST='true'
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'better/dashboard.html')
+        
+        # Check that notes were saved
+        self.target.refresh_from_db()
+        self.assertEqual(self.target.notes, notes_text)
+    
+    def test_post_updates_target_notes_without_htmx(self):
+        """Test that non-HTMX POST request updates notes and redirects."""
+        notes_text = "Felt great after completing this!"
+        
+        response = self.client.post(
+            reverse('better:target-notes', kwargs={'pk': self.target.pk}),
+            {'notes': notes_text}
+        )
+        
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('better:dashboard'))
+        
+        # Check that notes were saved
+        self.target.refresh_from_db()
+        self.assertEqual(self.target.notes, notes_text)
+        
+        # Check success message
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any('notes updated successfully' in str(m) for m in messages))
+    
+    def test_post_with_empty_notes_clears_field(self):
+        """Test that posting empty notes clears the field."""
+        # First set some notes
+        self.target.notes = "Some target notes"
+        self.target.save()
+        
+        response = self.client.post(
+            reverse('better:target-notes', kwargs={'pk': self.target.pk}),
+            {'notes': ''}
+        )
+        
+        self.assertEqual(response.status_code, 302)
+        
+        # Check that notes were cleared
+        self.target.refresh_from_db()
+        self.assertEqual(self.target.notes, '')
+    
+    def test_post_nonexistent_target_returns_404(self):
+        """Test that accessing non-existent target returns 404."""
+        response = self.client.post(reverse('better:target-notes', kwargs={'pk': 9999}), {'notes': 'test'})
+        self.assertEqual(response.status_code, 404)
+    
+    def test_post_deleted_target_returns_404(self):
+        """Test that accessing soft-deleted target returns 404."""
+        self.target.is_deleted = True
+        self.target.save()
+        
+        response = self.client.post(reverse('better:target-notes', kwargs={'pk': self.target.pk}), {'notes': 'test'})
+        self.assertEqual(response.status_code, 404)
+
+
+class SleepWakeTimeFormTestCase(BaseViewTestCase):
+    """Test cases for SleepWakeTimeForm to ensure cross-day sleep times work correctly."""
+    
+    def test_form_accepts_cross_day_sleep_time(self):
+        """Test that form accepts sleep time that appears before wake time (next day)."""
+        form_data = {
+            'wake_time': '07:00',
+            'sleep_time': '01:00'  # 1 AM next day
+        }
+        form = SleepWakeTimeForm(data=form_data, instance=self.score_day)
+        
+        self.assertTrue(form.is_valid(), f"Form errors: {form.errors}")
+    
+    def test_form_accepts_same_day_sleep_time(self):
+        """Test that form accepts sleep time on the same day."""
+        form_data = {
+            'wake_time': '06:00',
+            'sleep_time': '23:30'  # 11:30 PM same day
+        }
+        form = SleepWakeTimeForm(data=form_data, instance=self.score_day)
+        
+        self.assertTrue(form.is_valid(), f"Form errors: {form.errors}")
+    
+    def test_form_save_handles_cross_day_sleep_time(self):
+        """Test that form save correctly handles cross-day sleep times."""
+        form_data = {
+            'wake_time': '08:00',
+            'sleep_time': '02:30'  # 2:30 AM next day
+        }
+        form = SleepWakeTimeForm(data=form_data, instance=self.score_day)
+        
+        self.assertTrue(form.is_valid())
+        saved_instance = form.save()
+        
+        # Convert to local time for comparison (timezone-aware)
+        wake_local = saved_instance.wake_time.astimezone()
+        sleep_local = saved_instance.sleep_time.astimezone()
+        
+        # Verify times were saved correctly
+        self.assertEqual(wake_local.hour, 8)
+        self.assertEqual(wake_local.minute, 0)
+        self.assertEqual(sleep_local.hour, 2)
+        self.assertEqual(sleep_local.minute, 30)
+        
+        # Verify sleep time is on the next day
+        self.assertEqual(sleep_local.date(), wake_local.date() + timedelta(days=1))
+    
+    def test_form_save_handles_same_day_sleep_time(self):
+        """Test that form save correctly handles same-day sleep times."""
+        form_data = {
+            'wake_time': '07:00',
+            'sleep_time': '22:00'  # 10 PM same day
+        }
+        form = SleepWakeTimeForm(data=form_data, instance=self.score_day)
+        
+        self.assertTrue(form.is_valid())
+        saved_instance = form.save()
+        
+        # Convert to local time for comparison (timezone-aware)
+        wake_local = saved_instance.wake_time.astimezone()
+        sleep_local = saved_instance.sleep_time.astimezone()
+        
+        # Verify times were saved correctly
+        self.assertEqual(wake_local.hour, 7)
+        self.assertEqual(sleep_local.hour, 22)
+        
+        # Verify sleep time is on the same day
+        self.assertEqual(sleep_local.date(), wake_local.date())
+    
+    def test_form_accepts_wake_time_only(self):
+        """Test that form accepts wake time without sleep time."""
+        form_data = {
+            'wake_time': '06:30',
+            'sleep_time': ''  # No sleep time
+        }
+        form = SleepWakeTimeForm(data=form_data, instance=self.score_day)
+        
+        self.assertTrue(form.is_valid(), f"Form errors: {form.errors}")
+        
+        saved_instance = form.save()
+        self.assertIsNotNone(saved_instance.wake_time)
+        self.assertIsNone(saved_instance.sleep_time)
+    
+    def test_form_clears_sleep_time_when_empty(self):
+        """Test that form clears sleep time when empty string is provided."""
+        # First set a sleep time
+        self.score_day.sleep_time = timezone.now()
+        self.score_day.save()
+        
+        form_data = {
+            'wake_time': '07:00',
+            'sleep_time': ''  # Clear sleep time
+        }
+        form = SleepWakeTimeForm(data=form_data, instance=self.score_day)
+        
+        self.assertTrue(form.is_valid())
+        saved_instance = form.save()
+        
+        self.assertIsNotNone(saved_instance.wake_time)
+        self.assertIsNone(saved_instance.sleep_time)
+    
+    def test_form_requires_wake_time(self):
+        """Test that form requires wake time."""
+        form_data = {
+            'wake_time': '',  # Empty wake time
+            'sleep_time': '23:00'
+        }
+        form = SleepWakeTimeForm(data=form_data, instance=self.score_day)
+        
+        self.assertFalse(form.is_valid())
+        self.assertIn('wake_time', form.errors)

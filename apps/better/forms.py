@@ -270,9 +270,8 @@ class SleepWakeTimeForm(forms.Form):
         wake_time = cleaned_data.get('wake_time')
         sleep_time = cleaned_data.get('sleep_time')
         
-        if wake_time and sleep_time:
-            if sleep_time <= wake_time:
-                raise ValidationError('Sleep time must be after wake time.')
+        # No validation needed here - sleep time can be before wake time
+        # (indicating next day) and the save() method handles this correctly
         
         return cleaned_data
     
