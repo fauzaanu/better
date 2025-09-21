@@ -30,10 +30,10 @@ class Importance(models.Model):
     def get_management_context(cls):
         """Get context data for importance management page"""
         from .forms import ImportanceForm
-        
+
         importance_levels = cls.objects.all().order_by('-score')
         create_form = ImportanceForm()
-        
+
         return {
             'importance_levels': importance_levels,
             'create_form': create_form,
@@ -45,9 +45,9 @@ class Importance(models.Model):
     def create_from_form(cls, form_data):
         """Create new importance level from form data"""
         from .forms import ImportanceForm
-        
+
         form = ImportanceForm(form_data)
-        
+
         if form.is_valid():
             importance = form.save()
             success_message = (
@@ -55,7 +55,7 @@ class Importance(models.Model):
                 f'has been created successfully. All scores have been recalculated automatically.'
             )
             return importance, success_message, None
-        
+
         # Form has errors - return context for re-rendering
         importance_levels = cls.objects.all().order_by('-score')
         context = {
@@ -70,13 +70,13 @@ class Importance(models.Model):
     def update_from_form(self, form_data):
         """Update importance level from form data"""
         from .forms import ImportanceForm
-        
+
         original_score = self.score
         form = ImportanceForm(form_data, instance=self)
-        
+
         if form.is_valid():
             updated_importance = form.save()
-            
+
             # Generate appropriate success message
             if original_score != updated_importance.score:
                 success_message = (
@@ -88,15 +88,15 @@ class Importance(models.Model):
                 success_message = (
                     f'Importance level "{updated_importance.label}" has been updated successfully.'
                 )
-            
+
             return updated_importance, success_message, None
-        
+
         # Form has validation errors
         error_messages = []
         for field, errors in form.errors.items():
             for error in errors:
                 error_messages.append(f'{field.title()}: {error}')
-        
+
         return None, None, error_messages
 
     def can_be_deleted(self):
@@ -105,32 +105,32 @@ class Importance(models.Model):
             importance=self,
             is_deleted=False
         ).count()
-        
+
         if targets_count > 0:
             error_message = (
                 f'Cannot delete importance level "{self.label}" because it is being used by '
                 f'{targets_count} target(s). Please reassign or delete those targets first.'
             )
             return False, error_message
-        
+
         return True, None
 
     def delete_with_message(self):
         """Delete importance level and return success message"""
         can_delete, error_message = self.can_be_deleted()
-        
+
         if not can_delete:
             return False, error_message
-        
+
         label = self.label
         score = self.score
         self.delete()
-        
+
         success_message = (
             f'Importance level "{label}" (score: {score}) has been deleted successfully. '
             f'All scores have been recalculated automatically.'
         )
-        
+
         return True, success_message
 
     @classmethod
@@ -149,7 +149,7 @@ class Importance(models.Model):
     def _handle_create_action(cls, form_data):
         """Handle create action"""
         importance, success_message, error_context = cls.create_from_form(form_data)
-        
+
         if importance:
             return 'success', success_message, None
         else:
@@ -159,21 +159,21 @@ class Importance(models.Model):
     def _handle_update_action(cls, form_data):
         """Handle update action"""
         importance_id = form_data.get('importance_id')
-        
+
         if not importance_id:
             return 'error', 'No importance level specified for update.', None
-        
+
         try:
             importance = get_object_or_404(cls, id=importance_id)
             updated_importance, success_message, error_messages = importance.update_from_form(form_data)
-            
+
             if updated_importance:
                 return 'success', success_message, None
             else:
                 # Join error messages
                 error_message = '; '.join(error_messages) if error_messages else 'Validation failed.'
                 return 'error', error_message, None
-                
+
         except cls.DoesNotExist:
             return 'error', 'Importance level not found.', None
         except Exception:
@@ -183,19 +183,19 @@ class Importance(models.Model):
     def _handle_delete_action(cls, form_data):
         """Handle delete action"""
         importance_id = form_data.get('importance_id')
-        
+
         if not importance_id:
             return 'error', 'No importance level specified for deletion.', None
-        
+
         try:
             importance = get_object_or_404(cls, id=importance_id)
             success, message = importance.delete_with_message()
-            
+
             if success:
                 return 'success', message, None
             else:
                 return 'error', message, None
-                
+
         except cls.DoesNotExist:
             return 'error', 'Importance level not found.', None
         except Exception:
@@ -209,6 +209,8 @@ class ScoreDay(BaseModel):
     wake_time = models.DateTimeField(null=True, blank=True, help_text="Time when you woke up")
     sleep_time = models.DateTimeField(null=True, blank=True, help_text="Time when you went to sleep")
 
+    notes = models.TextField(null=True, blank=True)
+
     class Meta:
         ordering = ['-day']
 
@@ -218,17 +220,17 @@ class ScoreDay(BaseModel):
     def calculate_scores(self):
         """Calculate and update daily scores from target categories"""
         categories = self.categories.filter(is_deleted=False)
-        
+
         # Calculate scores for each category first
         for category in categories:
             category.calculate_scores()
-        
+
         # Calculate daily totals
         totals = categories.aggregate(
             total_score=models.Sum('score'),
             total_max_score=models.Sum('max_score')
         )
-        
+
         self.score = totals['total_score'] or 0
         self.max_score = totals['total_max_score'] or 0
         # Save without triggering signals to prevent recursion
@@ -238,22 +240,22 @@ class ScoreDay(BaseModel):
         """Return display-friendly normalized score"""
         if not self.max_score or self.max_score == 0:
             return 0
-        
+
         percentage = (self.score / self.max_score) * 100
-        
+
         # Determine normalization factor based on score magnitude
         if self.max_score >= 100:
             factor = 100
         else:
             factor = 10
-            
+
         return round(percentage * factor / 100, 1)
 
     def get_display_score(self, baseline=10):
         """Return score multiplied by baseline for display purposes"""
         if not self.max_score or self.max_score == 0:
             return 0
-        
+
         percentage = (self.score / self.max_score)
         return round(percentage * baseline, 1)
 
@@ -261,9 +263,9 @@ class ScoreDay(BaseModel):
         """Return Tailwind color class based on score percentage"""
         if not self.max_score or self.max_score == 0:
             return "text-zinc-500"
-        
+
         percentage = (self.score / self.max_score) * 100
-        
+
         if percentage >= 90:
             return "text-green-400"
         elif percentage >= 75:
@@ -283,12 +285,12 @@ class ScoreDay(BaseModel):
             day__lt=self.day,
             is_deleted=False
         ).order_by('-day').first()
-        
+
         if not previous_day:
             return
-        
+
         previous_categories = previous_day.categories.filter(is_deleted=False)
-        
+
         for prev_category in previous_categories:
             # Create new category for current day
             new_category = TargetCategory.objects.create(
@@ -298,7 +300,7 @@ class ScoreDay(BaseModel):
                 score=None,
                 max_score=None
             )
-            
+
             # Copy targets from previous category
             prev_targets = prev_category.targets.filter(is_deleted=False)
             for prev_target in prev_targets:
@@ -312,38 +314,38 @@ class ScoreDay(BaseModel):
     def get_yesterday_change(self):
         """Calculate percentage change compared to yesterday"""
         from datetime import timedelta
-        
+
         yesterday_date = self.day - timedelta(days=1)
         try:
             yesterday = ScoreDay.objects.get(day=yesterday_date, is_deleted=False)
-            
+
             # Calculate percentage change
             if yesterday.max_score and yesterday.max_score > 0 and self.max_score and self.max_score > 0:
                 yesterday_percentage = (yesterday.score / yesterday.max_score) * 100
                 today_percentage = (self.score / self.max_score) * 100
                 return today_percentage - yesterday_percentage
-            
+
         except ScoreDay.DoesNotExist:
             pass
-        
+
         return None
 
     def get_active_hours(self):
         """Calculate active hours between wake and sleep time"""
         if not self.wake_time:
             return None
-        
+
         if self.sleep_time:
             # Calculate duration between wake and sleep
             duration = self.sleep_time - self.wake_time
             return round(duration.total_seconds() / 3600, 1)  # Convert to hours
-        
+
         # If no sleep time yet, calculate from wake time to now (for current day)
         if self.day == timezone.now().date():
             now = timezone.now()
             duration = now - self.wake_time
             return round(duration.total_seconds() / 3600, 1)
-        
+
         return None
 
     def has_wake_time(self):
@@ -358,16 +360,16 @@ class ScoreDay(BaseModel):
             day=previous_date,
             is_deleted=False
         ).first()
-    
+
     def get_next_day(self):
         """Get the next ScoreDay if it exists and is not in the future"""
         from datetime import timedelta
         next_date = self.day + timedelta(days=1)
-        
+
         # Don't allow navigation to future days
         if next_date > timezone.now().date():
             return None
-            
+
         return ScoreDay.objects.filter(
             day=next_date,
             is_deleted=False
@@ -381,28 +383,28 @@ class ScoreDay(BaseModel):
             day=today,
             defaults={'score': None, 'max_score': None}
         )
-        
+
         if created:
             score_day.copy_previous_day_categories()
             score_day.calculate_scores()
-        
+
         return score_day
 
     def get_dashboard_context(self, sleep_wake_form=None):
         """Get comprehensive dashboard context data."""
         from .forms import SleepWakeTimeForm
-        
+
         if sleep_wake_form is None:
             sleep_wake_form = SleepWakeTimeForm(instance=self)
-        
+
         # Get yesterday's data
         yesterday_day = self.get_previous_day()
-        
+
         # Get categories with optimized queries
         categories = self.categories.filter(is_deleted=False).prefetch_related(
             'targets__importance'
         ).order_by('name')
-        
+
         # Prepare categories data
         categories_data = []
         for category in categories:
@@ -415,7 +417,7 @@ class ScoreDay(BaseModel):
                 'total_count': targets.count(),
                 'normalized_score': category.get_normalized_score()
             })
-        
+
         # Prepare yesterday's categories data
         yesterday_categories = []
         if yesterday_day:
@@ -426,14 +428,14 @@ class ScoreDay(BaseModel):
                     'achieved_count': category.targets.filter(is_deleted=False, is_achieved=True).count(),
                     'total_count': category.targets.filter(is_deleted=False).count(),
                 })
-        
+
         # Calculate progress percentage
         progress_percentage = 0
         if self.max_score and self.max_score > 0:
             progress_percentage = round((self.score / self.max_score) * 100, 1)
-        
+
         self.yesterday_change = self.get_yesterday_change()
-        
+
         return {
             'current_day': self,
             'yesterday_day': yesterday_day,
@@ -468,16 +470,16 @@ class TargetCategory(BaseModel):
     def calculate_scores(self):
         """Calculate category scores from targets"""
         targets = self.targets.filter(is_deleted=False)
-        
+
         # Calculate max score: number of targets × highest importance score
         target_count = targets.count()
         max_importance_score = Importance.get_max_score()
         self.max_score = target_count * max_importance_score
-        
+
         # Calculate actual score: sum of achieved targets' importance scores
         achieved_targets = targets.filter(is_achieved=True)
         self.score = sum(target.importance.score for target in achieved_targets)
-        
+
         # Save without triggering signals to prevent recursion
         self.save(update_fields=['score', 'max_score', 'updated_at'])
 
@@ -485,22 +487,22 @@ class TargetCategory(BaseModel):
         """Return display-friendly normalized score"""
         if not self.max_score or self.max_score == 0:
             return 0
-        
+
         percentage = (self.score / self.max_score) * 100
-        
+
         # Determine normalization factor based on score magnitude
         if self.max_score >= 100:
             factor = 100
         else:
             factor = 10
-            
+
         return round(percentage * factor / 100, 1)
 
     def get_display_score(self, baseline=10):
         """Return score multiplied by baseline for display purposes"""
         if not self.max_score or self.max_score == 0:
             return 0
-        
+
         percentage = (self.score / self.max_score)
         return round(percentage * baseline, 1)
 
@@ -508,9 +510,9 @@ class TargetCategory(BaseModel):
         """Return Tailwind color class based on score percentage"""
         if not self.max_score or self.max_score == 0:
             return "text-zinc-500"
-        
+
         percentage = (self.score / self.max_score) * 100
-        
+
         if percentage >= 90:
             return "text-green-400"
         elif percentage >= 75:
@@ -527,22 +529,22 @@ class TargetCategory(BaseModel):
     def get_yesterday_change(self):
         """Calculate percentage change compared to yesterday's same category"""
         from datetime import timedelta
-        
+
         yesterday_date = self.day.day - timedelta(days=1)
         try:
             yesterday_day = ScoreDay.objects.get(day=yesterday_date, is_deleted=False)
             yesterday_category = yesterday_day.categories.get(name=self.name, is_deleted=False)
-            
+
             # Calculate percentage change
-            if (yesterday_category.max_score and yesterday_category.max_score > 0 and 
-                self.max_score and self.max_score > 0):
+            if (yesterday_category.max_score and yesterday_category.max_score > 0 and
+                    self.max_score and self.max_score > 0):
                 yesterday_percentage = (yesterday_category.score / yesterday_category.max_score) * 100
                 today_percentage = (self.score / self.max_score) * 100
                 return today_percentage - yesterday_percentage
-            
+
         except (ScoreDay.DoesNotExist, TargetCategory.DoesNotExist):
             pass
-        
+
         return None
 
     @classmethod
@@ -559,9 +561,9 @@ class TargetCategory(BaseModel):
     def get_update_context(self):
         """Get context data for category update form"""
         from .forms import TargetCategoryForm
-        
+
         form = TargetCategoryForm(instance=self, current_day=self.day)
-        
+
         return {
             'form': form,
             'object': self,
@@ -573,14 +575,14 @@ class TargetCategory(BaseModel):
     def update_from_form(self, form_data):
         """Update category from form data"""
         from .forms import TargetCategoryForm
-        
+
         form = TargetCategoryForm(form_data, instance=self, current_day=self.day)
-        
+
         if form.is_valid():
             updated_category = form.save()
             success_message = f'Category "{updated_category.name}" has been updated successfully.'
             return updated_category, success_message, None
-        
+
         # Form has errors - return context for re-rendering
         context = {
             'form': form,
@@ -594,7 +596,7 @@ class TargetCategory(BaseModel):
     def get_delete_context(self):
         """Get context data for category deletion confirmation"""
         target_count = self.targets.filter(is_deleted=False).count()
-        
+
         return {
             'object': self,
             'page_title': f'Delete Category: {self.name}',
@@ -605,17 +607,17 @@ class TargetCategory(BaseModel):
     def soft_delete_with_targets(self):
         """Soft delete category and all its targets"""
         category_name = self.name
-        
+
         # Soft delete the category
         self.is_deleted = True
         self.save()
-        
+
         # Soft delete all associated targets
         self.targets.filter(is_deleted=False).update(is_deleted=True)
-        
+
         # Recalculate scores after deletion
         self.day.calculate_scores()
-        
+
         success_message = f'Category "{category_name}" and all its targets have been removed successfully.'
         return success_message
 
@@ -625,6 +627,9 @@ class Target(BaseModel):
     category = models.ForeignKey(TargetCategory, on_delete=models.CASCADE, related_name='targets')
     importance = models.ForeignKey(Importance, on_delete=models.CASCADE)
     is_achieved = models.BooleanField(default=False)
+
+    # enhancements
+    notes = models.TextField(blank=True, null=True)
 
     class Meta:
         ordering = ['-importance__score', 'name']
@@ -636,7 +641,7 @@ class Target(BaseModel):
         """Toggle achievement status and trigger recalculation"""
         self.is_achieved = not self.is_achieved
         self.save()
-        
+
         # Trigger recalculation of category and day scores
         self.category.calculate_scores()
         self.category.day.calculate_scores()
@@ -660,7 +665,7 @@ class Target(BaseModel):
     def get_create_context(cls, current_day, category_id=None):
         """Get context data for target creation form"""
         from .forms import TargetForm
-        
+
         # Handle initial category selection
         initial = {}
         if category_id:
@@ -673,9 +678,9 @@ class Target(BaseModel):
                 initial['category'] = category
             except TargetCategory.DoesNotExist:
                 pass  # Invalid category ID, ignore
-        
+
         form = TargetForm(initial=initial, current_day=current_day)
-        
+
         return {
             'form': form,
             'page_title': 'Create New Target',
@@ -689,15 +694,13 @@ class Target(BaseModel):
     def create_from_form(cls, form_data, current_day):
         """Create a new target from form data"""
         from .forms import TargetForm
-        
+
         form = TargetForm(form_data, current_day=current_day)
-        
+
         if form.is_valid():
             target = form.save(commit=False)
             target.is_achieved = False  # Initialize as not achieved
             target.save()
             return target, None  # target, error
-        
+
         return None, form  # target, error_form
-
-

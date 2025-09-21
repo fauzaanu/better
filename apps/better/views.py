@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import View
 from django.contrib import messages
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from datetime import timedelta
 from .models import ScoreDay, TargetCategory, Target, Importance
 from .forms import TargetCategoryForm, SleepWakeTimeForm
@@ -331,3 +331,44 @@ class DayView(View):
                     messages.error(request, f'{field.title()}: {error}')
             
             return redirect('better:day-view', pk=pk)
+
+
+class DayNotesView(View):
+    """Manage daily notes with HTMX support."""
+    
+    def post(self, request, pk):
+        """Update day notes."""
+        score_day = get_object_or_404(ScoreDay, pk=pk, is_deleted=False)
+        notes = request.POST.get('notes', '').strip()
+        
+        score_day.notes = notes
+        score_day.save(update_fields=['notes', 'updated_at'])
+        
+        if request.headers.get('HX-Request'):
+            # Return the full dashboard page to refresh all data
+            context = score_day.get_dashboard_context()
+            return render(request, 'better/dashboard.html', context)
+        
+        messages.success(request, 'Day notes updated successfully.')
+        return redirect('better:day-view', pk=pk)
+
+
+class TargetNotesView(View):
+    """Manage target notes with HTMX support."""
+    
+    def post(self, request, pk):
+        """Update target notes."""
+        target = get_object_or_404(Target, pk=pk, is_deleted=False)
+        notes = request.POST.get('notes', '').strip()
+        
+        target.notes = notes
+        target.save(update_fields=['notes', 'updated_at'])
+        
+        if request.headers.get('HX-Request'):
+            # Get the current day and return full dashboard to refresh all data
+            current_day = ScoreDay.get_or_create_today()
+            context = current_day.get_dashboard_context()
+            return render(request, 'better/dashboard.html', context)
+        
+        messages.success(request, 'Target notes updated successfully.')
+        return redirect('better:dashboard')

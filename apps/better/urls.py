@@ -21,4 +21,8 @@ urlpatterns = [
     
     # Importance Management
     path('importance/', views.ImportanceManagementView.as_view(), name='importance-manage'),
+    
+    # Notes Management
+    path('day/<int:pk>/notes/', views.DayNotesView.as_view(), name='day-notes'),
+    path('target/<int:pk>/notes/', views.TargetNotesView.as_view(), name='target-notes'),
 ]

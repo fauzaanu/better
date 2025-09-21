@@ -27,36 +27,140 @@
       
       <div class="space-y-2">
         {% for target in category_data.targets %}
-          <label class="flex items-center space-x-3 p-2 rounded cursor-pointer hover:bg-zinc-900 transition-colors" id="target-{{ target.id }}">
-            <input 
-              type="checkbox" 
-              class="target-checkbox w-5 h-5 text-zinc-600 bg-zinc-950 border-zinc-800 rounded focus:ring-zinc-500"
-              data-target-id="{{ target.id }}"
-              {% if target.is_achieved %}checked{% endif %}
-              {% if is_today %}
-                hx-post="{% url 'better:target-toggle' target.id %}"
-                hx-target="#today-scores"
-                hx-swap="outerHTML"
-                hx-trigger="change"
-                hx-include="[name='csrfmiddlewaretoken']"
-                hx-indicator="#loading-{{ target.id }}"
+          <div class="border border-zinc-800 rounded p-2" 
+               x-data="{ 
+                 showNotesModal: false, 
+                 showNotes: false, 
+                 notes: '{{ target.notes|default:""|escapejs }}',
+                 openNotesModal() {
+                   this.showNotesModal = true;
+                   this.$nextTick(() => this.$refs.targetNotesTextarea.focus());
+                 }
+               }" 
+               id="target-container-{{ target.id }}">
+            <div class="flex items-center space-x-3">
+              <input 
+                type="checkbox" 
+                class="target-checkbox w-5 h-5 text-zinc-600 bg-zinc-950 border-zinc-800 rounded focus:ring-zinc-500"
+                data-target-id="{{ target.id }}"
+                {% if target.is_achieved %}checked{% endif %}
+                {% if is_today %}
+                  hx-post="{% url 'better:target-toggle' target.id %}"
+                  hx-target="#today-scores"
+                  hx-swap="outerHTML"
+                  hx-trigger="change"
+                  hx-include="[name='csrfmiddlewaretoken']"
+                  hx-indicator="#loading-{{ target.id }}"
+                {% else %}
+                  disabled
+                {% endif %}
+              >
+              <span class="flex-1 {% if target.is_achieved %}line-through text-zinc-500{% else %}text-white{% endif %}" id="target-name-{{ target.id }}">
+                {{ target.name }}
+              </span>
+              <span class="text-xs px-2 py-1 rounded bg-zinc-900 border border-zinc-800 text-zinc-300">
+                {{ target.importance.label }} ({{ target.importance.score }})
+              </span>
+              {% if target.notes %}
+                <button 
+                  class="text-xs text-zinc-400 hover:text-zinc-300 transition-colors"
+                  @click="showNotes = !showNotes">
+                  Notes
+                </button>
+                <button 
+                  class="text-xs text-zinc-500 hover:text-zinc-400 transition-colors"
+                  @click="openNotesModal()">
+                  Edit
+                </button>
               {% else %}
-                disabled
+                <button 
+                  class="text-xs text-zinc-500 hover:text-zinc-400 transition-colors"
+                  @click="openNotesModal()">
+                  + Note
+                </button>
               {% endif %}
-            >
-            <span class="flex-1 {% if target.is_achieved %}line-through text-zinc-500{% else %}text-white{% endif %}" id="target-name-{{ target.id }}">
-              {{ target.name }}
-            </span>
-            <span class="text-xs px-2 py-1 rounded bg-zinc-900 border border-zinc-800 text-zinc-300">
-              {{ target.importance.label }} ({{ target.importance.score }})
-            </span>
-            <div id="loading-{{ target.id }}" class="htmx-indicator">
-              <svg class="animate-spin h-4 w-4 text-zinc-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
+              <div id="loading-{{ target.id }}" class="htmx-indicator">
+                <svg class="animate-spin h-4 w-4 text-zinc-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
             </div>
-          </label>
+            
+            <!-- Target Notes Display -->
+            {% if target.notes %}
+              <div class="mt-2 p-2 bg-zinc-900 border border-zinc-700 rounded text-xs" 
+                   x-show="showNotes"
+                   x-transition:enter="transition ease-out duration-200"
+                   x-transition:enter-start="opacity-0 transform scale-95"
+                   x-transition:enter-end="opacity-100 transform scale-100"
+                   x-transition:leave="transition ease-in duration-150"
+                   x-transition:leave-start="opacity-100 transform scale-100"
+                   x-transition:leave-end="opacity-0 transform scale-95"
+                   style="display: none;">
+                <div class="flex justify-between items-start mb-1">
+                  <span class="text-zinc-400 font-medium">Notes:</span>
+                </div>
+                <div class="text-zinc-300 whitespace-pre-wrap leading-relaxed">{{ target.notes }}</div>
+              </div>
+            {% endif %}
+
+            <!-- Alpine.js Modal for Target Notes -->
+            <div x-show="showNotesModal" 
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 z-[9999] flex items-center justify-center p-4" 
+                 style="display: none;">
+              
+              <!-- Backdrop -->
+              <div class="absolute inset-0 bg-black bg-opacity-75" @click="showNotesModal = false"></div>
+              
+              <!-- Modal Content -->
+              <div class="relative bg-zinc-950 rounded-lg shadow-xl max-w-lg w-full border border-zinc-800 max-h-[90vh] overflow-y-auto">
+                <form hx-post="{% url 'better:target-notes' target.pk %}"
+                      hx-target="body"
+                      hx-swap="outerHTML"
+                      @htmx:after-request="showNotesModal = false">
+                  {% csrf_token %}
+                  
+                  <!-- Header -->
+                  <div class="px-6 py-4 border-b border-zinc-800 bg-zinc-950">
+                    <h3 class="text-lg font-medium text-zinc-200">Target Notes</h3>
+                    <p class="text-sm text-zinc-400 mt-1">{{ target.name }}</p>
+                  </div>
+                  
+                  <!-- Body -->
+                  <div class="px-6 py-4 bg-zinc-950">
+                    <textarea 
+                      name="notes" 
+                      rows="4" 
+                      x-model="notes"
+                      class="w-full px-3 py-2 text-sm bg-black border border-zinc-800 rounded text-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-700 focus:border-zinc-700 resize-none placeholder-zinc-500"
+                      placeholder="Add notes about this target..."
+                      x-ref="targetNotesTextarea"
+                      @click.away.stop></textarea>
+                  </div>
+                  
+                  <!-- Footer -->
+                  <div class="px-6 py-4 bg-zinc-900 rounded-b-lg flex justify-end space-x-3 border-t border-zinc-800">
+                    <button type="button"
+                            @click="showNotesModal = false"
+                            class="px-4 py-2 text-sm font-medium text-zinc-400 bg-zinc-950 border border-zinc-700 rounded hover:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-600">
+                      Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 text-sm font-medium text-zinc-200 bg-zinc-800 border border-zinc-700 rounded hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-600">
+                      Save Notes
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
         {% endfor %}
       </div>
     </div>
